@@ -164,7 +164,7 @@ def handle_query(query, file_path):
                     print("Couldn't find the compiled SQL file.")
             else:
                 print("Error running dbt compile:")
-                print(result.stderr)
+                print(result.stdout)
         except Exception as e:
             print(f"Error: {e}")
     else:
