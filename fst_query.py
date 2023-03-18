@@ -7,23 +7,25 @@ from watchdog.events import FileSystemEventHandler
 import psutil
 import subprocess
 import yaml
+import sys
 
 
 CURRENT_WORKING_DIR = os.getcwd()
 
 
 class QueryHandler(FileSystemEventHandler):
-    def __init__(self, callback):
+    def __init__(self, callback, active_file_path: str):
         self.callback = callback
+        self.active_file_path = active_file_path
 
     def on_modified(self, event):
-        print(f"Detected modification: {event.src_path}")
         if event.src_path.endswith(".sql"):
-            active_file = get_active_file()
+            active_file = get_active_file(self.active_file_path)
             if active_file and active_file == event.src_path:
+                print(f"Detected modification: {event.src_path}")
                 with open(event.src_path, "r") as file:
                     query = file.read()
-                    self.callback(query)
+                    self.callback(query, self.active_file_path)
 
 
 def execute_query(query: str, db_file: str):
@@ -33,8 +35,8 @@ def execute_query(query: str, db_file: str):
     return result
 
 
-def watch_directory(directory: str, callback):
-    event_handler = QueryHandler(callback)
+def watch_directory(directory: str, callback, active_file_path: str):
+    event_handler = QueryHandler(callback, active_file_path)
     observer = Observer()
     observer.schedule(event_handler, path=directory, recursive=True)
     observer.start()
@@ -47,25 +49,31 @@ def watch_directory(directory: str, callback):
     observer.join()
 
 
-def get_active_file():
-    active_file = None
-    for proc in psutil.process_iter(["name", "open_files"]):
-        if proc.info["name"] == "Code":
-            for file in proc.info["open_files"]:
-                if file.path.endswith(".sql"):
-                    active_file = file.path
-                    break
-    print(f"active file: {active_file}")
-    return active_file
+def get_active_file(file_path: str):
+    if file_path and file_path.endswith(".sql"):
+        print(f"active file: {file_path}")
+        return file_path
+    else:
+        print("No active SQL file found.")
+        return None
 
 
-def find_compiled_sql_file():
-    active_file = get_active_file()
+def get_project_name():
+    with open("profiles.yml", "r") as file:
+        profiles = yaml.safe_load(file)
+        project_name = list(profiles.keys())[0]
+        print(f"project_name: {project_name}")
+        return project_name
+
+
+def find_compiled_sql_file(file_path):
+    active_file = get_active_file(file_path)
     if not active_file:
         return None
     project_directory = CURRENT_WORKING_DIR
+    project_name = get_project_name()
     relative_file_path = os.path.relpath(active_file, project_directory)
-    compiled_directory = os.path.join(project_directory, "target", "compiled")
+    compiled_directory = os.path.join(project_directory, "target", "compiled", project_name)
     compiled_file_path = os.path.join(compiled_directory, relative_file_path)
     print(f"compiled_file_path: {compiled_file_path}")
     return compiled_file_path if os.path.exists(compiled_file_path) else None
@@ -87,11 +95,11 @@ def get_duckdb_file_path():
         return db_path
 
 
-def handle_query(query):
+def handle_query(query, file_path):
     print(f"Received query:\n{query}")
     if query.strip():
         try:
-            active_file = get_active_file()
+            active_file = get_active_file(file_path)
             if not active_file:
                 return
             model_name = get_model_name_from_file(active_file)
@@ -103,7 +111,7 @@ def handle_query(query):
             )
             if result.returncode == 0:
                 print("dbt compile was successful.")
-                compiled_sql_file = find_compiled_sql_file()
+                compiled_sql_file = find_compiled_sql_file(file_path)
                 if compiled_sql_file:
                     with open(compiled_sql_file, "r") as file:
                         compiled_query = file.read()
@@ -126,6 +134,11 @@ def handle_query(query):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        active_file_path = sys.argv[1]
+    else:
+        active_file_path = None
+
     project_directory = CURRENT_WORKING_DIR
     print(f"Watching directory: {project_directory}")
-    watch_directory(project_directory, handle_query)
+    watch_directory(project_directory, handle_query, active_file_path)
