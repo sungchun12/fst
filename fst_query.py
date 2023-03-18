@@ -1,4 +1,3 @@
-# duckdb_query.py
 import duckdb
 import os
 import time
@@ -7,6 +6,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import psutil
 import subprocess
+import yaml
 
 
 CURRENT_WORKING_DIR = os.getcwd()
@@ -26,9 +26,9 @@ class QueryHandler(FileSystemEventHandler):
                     self.callback(query)
 
 
-def execute_query(query: str):
-    connection = duckdb.connect()
-    result = connection.execute(query).fetchall()
+def execute_query(query: str, db_file: str):
+    connection = duckdb.connect(database=db_file, read_only=False)
+    result = connection.execute(query).fetchmany(10)
     connection.close()
     return result
 
@@ -79,6 +79,14 @@ def get_model_name_from_file(file_path: str):
     return model_name.replace(os.sep, ".")
 
 
+def get_duckdb_file_path():
+    with open("profiles.yml", "r") as file:
+        profiles = yaml.safe_load(file)
+        target = profiles["jaffle_shop"]["target"]
+        db_path = profiles["jaffle_shop"]["outputs"][target]["path"]
+        return db_path
+
+
 def handle_query(query):
     print(f"Received query:\n{query}")
     if query.strip():
@@ -100,7 +108,9 @@ def handle_query(query):
                     with open(compiled_sql_file, "r") as file:
                         compiled_query = file.read()
                         print(f"Executing compiled query:\n{compiled_query}")
-                        result = execute_query(compiled_query)
+                        duckdb_file_path = get_duckdb_file_path()
+                        print(f"Using DuckDB file: {duckdb_file_path}")
+                        result = execute_query(compiled_query, duckdb_file_path)
                         print("Result:")
                         for row in result:
                             print(row)
