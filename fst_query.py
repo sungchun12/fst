@@ -17,6 +17,7 @@ class QueryHandler(FileSystemEventHandler):
         self.callback = callback
 
     def on_modified(self, event):
+        print(f"Detected modification: {event.src_path}")
         if event.src_path.endswith(".sql"):
             active_file = get_active_file()
             if active_file and active_file == event.src_path:
@@ -54,47 +55,8 @@ def get_active_file():
                 if file.path.endswith(".sql"):
                     active_file = file.path
                     break
+    print(f"active file: {active_file}")
     return active_file
-
-
-if __name__ == "__main__":
-
-    def handle_query(query):
-        if query.strip():
-            try:
-                active_file = get_active_file()
-                if not active_file:
-                    return
-                model_name = get_model_name_from_file(active_file)
-                print(f"Compiling dbt with the modified SQL file ({model_name})...")
-                result = subprocess.run(
-                    ["dbt", "compile", "--models", model_name],
-                    capture_output=True,
-                    text=True,
-                )
-                if result.returncode == 0:
-                    print("dbt compile was successful.")
-                    compiled_sql_file = find_compiled_sql_file()
-                    if compiled_sql_file:
-                        with open(compiled_sql_file, "r") as file:
-                            compiled_query = file.read()
-                            print(f"Executing compiled query:\n{compiled_query}")
-                            result = execute_query(compiled_query)
-                            print("Result:")
-                            for row in result:
-                                print(row)
-                    else:
-                        print("Couldn't find the compiled SQL file.")
-                else:
-                    print("Error running dbt compile:")
-                    print(result.stderr)
-            except Exception as e:
-                print(f"Error: {e}")
-        else:
-            print("Empty query.")
-
-    project_directory = CURRENT_WORKING_DIR
-    watch_directory(project_directory, handle_query)
 
 
 def find_compiled_sql_file():
@@ -105,6 +67,7 @@ def find_compiled_sql_file():
     relative_file_path = os.path.relpath(active_file, project_directory)
     compiled_directory = os.path.join(project_directory, "target", "compiled")
     compiled_file_path = os.path.join(compiled_directory, relative_file_path)
+    print(f"compiled_file_path: {compiled_file_path}")
     return compiled_file_path if os.path.exists(compiled_file_path) else None
 
 
@@ -114,3 +77,45 @@ def get_model_name_from_file(file_path: str):
     relative_file_path = os.path.relpath(file_path, models_directory)
     model_name, _ = os.path.splitext(relative_file_path)
     return model_name.replace(os.sep, ".")
+
+
+def handle_query(query):
+    print(f"Received query:\n{query}")
+    if query.strip():
+        try:
+            active_file = get_active_file()
+            if not active_file:
+                return
+            model_name = get_model_name_from_file(active_file)
+            print(f"Compiling dbt with the modified SQL file ({model_name})...")
+            result = subprocess.run(
+                ["dbt", "compile", "--models", model_name],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0:
+                print("dbt compile was successful.")
+                compiled_sql_file = find_compiled_sql_file()
+                if compiled_sql_file:
+                    with open(compiled_sql_file, "r") as file:
+                        compiled_query = file.read()
+                        print(f"Executing compiled query:\n{compiled_query}")
+                        result = execute_query(compiled_query)
+                        print("Result:")
+                        for row in result:
+                            print(row)
+                else:
+                    print("Couldn't find the compiled SQL file.")
+            else:
+                print("Error running dbt compile:")
+                print(result.stderr)
+        except Exception as e:
+            print(f"Error: {e}")
+    else:
+        print("Empty query.")
+
+
+if __name__ == "__main__":
+    project_directory = CURRENT_WORKING_DIR
+    print(f"Watching directory: {project_directory}")
+    watch_directory(project_directory, handle_query)
