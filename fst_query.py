@@ -11,10 +11,14 @@ from tabulate import tabulate
 from pygments import highlight
 from pygments.lexers import SqlLexer
 from pygments.formatters import TerminalFormatter
-
+from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor
 
 CURRENT_WORKING_DIR = os.getcwd()
 
+# Load profiles.yml only once
+with open("profiles.yml", "r") as file:
+    PROFILES = yaml.safe_load(file)
 
 class QueryHandler(FileSystemEventHandler):
     def __init__(self, callback, active_file_path: str):
@@ -30,7 +34,7 @@ class QueryHandler(FileSystemEventHandler):
                     query = file.read()
                     self.callback(query, self.active_file_path)
 
-
+@lru_cache
 def execute_query(query: str, db_file: str):
     connection = duckdb.connect(database=db_file, read_only=False)
     result = connection.execute(query).fetchmany(5)
@@ -61,12 +65,11 @@ def get_active_file(file_path: str):
         return None
 
 
+@lru_cache
 def get_project_name():
-    with open("profiles.yml", "r") as file:
-        profiles = yaml.safe_load(file)
-        project_name = list(profiles.keys())[0]
-        print(f"project_name: {project_name}")
-        return project_name
+    project_name = list(PROFILES.keys())[0]
+    print(f"project_name: {project_name}")
+    return project_name
 
 
 def find_compiled_sql_file(file_path):
@@ -92,12 +95,11 @@ def get_model_name_from_file(file_path: str):
     return model_name.replace(os.sep, ".")
 
 
+@lru_cache
 def get_duckdb_file_path():
-    with open("profiles.yml", "r") as file:
-        profiles = yaml.safe_load(file)
-        target = profiles["jaffle_shop"]["target"]
-        db_path = profiles["jaffle_shop"]["outputs"][target]["path"]
-        return db_path
+    target = PROFILES["jaffle_shop"]["target"]
+    db_path = PROFILES["jaffle_shop"]["outputs"][target]["path"]
+    return db_path
 
 
 
@@ -125,8 +127,8 @@ def handle_query(query, file_path):
                 if compiled_sql_file:
                     with open(compiled_sql_file, "r") as file:
                         compiled_query = file.read()
-                        colored_compiled_query = highlight(compiled_query, SqlLexer(), TerminalFormatter())  # Add this line
-                        print(f"Executing compiled query:\n{colored_compiled_query}")  # Modify this line
+                        colored_compiled_query = highlight(compiled_query, SqlLexer(), TerminalFormatter())
+                        print(f"Executing compiled query:\n{colored_compiled_query}")
                         duckdb_file_path = get_duckdb_file_path()
                         print(f"Using DuckDB file: {duckdb_file_path}")
 
