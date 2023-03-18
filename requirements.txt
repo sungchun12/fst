@@ -1,0 +1,4 @@
+black
+watchdog
+psutil
+dbt-core
