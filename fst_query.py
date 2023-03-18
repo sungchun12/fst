@@ -20,33 +20,36 @@ CURRENT_WORKING_DIR = os.getcwd()
 with open("profiles.yml", "r") as file:
     PROFILES = yaml.safe_load(file)
 
+
 class QueryHandler(FileSystemEventHandler):
     def __init__(self, callback, active_file_path: str):
         self.callback = callback
         self.active_file_path = active_file_path
-        self.debounce_timer = None  # Add this line
+        self.debounce_timer = None
 
     def on_modified(self, event):
         if event.src_path.endswith(".sql"):
             active_file = get_active_file(self.active_file_path)
             if active_file and active_file == event.src_path:
-                print(f"Detected modification: {event.src_path}")
-                if self.debounce_timer is None:  # Add this line
-                    self.debounce_timer = Timer(1.5, self.debounce_query)  # Modify this line
-                    self.debounce_timer.start()  # Add this line
+                if self.debounce_timer is None:
+                    self.debounce_timer = Timer(1.5, self.debounce_query)
+                    self.debounce_timer.start()
                 else:
-                    self.debounce_timer.cancel()  # Add this line
-                    self.debounce_timer = Timer(1.5, self.debounce_query)  # Modify this line
-                    self.debounce_timer.start()  # Add this line
+                    self.debounce_timer.cancel()
+                    self.debounce_timer = Timer(1.5, self.debounce_query)
+                    self.debounce_timer.start()
 
     def debounce_query(self):
-        if self.debounce_timer is not None:  # Add this line
-            self.debounce_timer.cancel()  # Add this line
-            self.debounce_timer = None  # Add this line
-        query = None  # Add this line
-        with open(self.active_file_path, "r") as file:  # Modify this line
-            query = file.read()  # Modify this line
+        if self.debounce_timer is not None:
+            self.debounce_timer.cancel()
+            self.debounce_timer = None
+        query = None
+        with open(self.active_file_path, "r") as file:
+            query = file.read()
         if query is not None and query.strip():
+            print(
+                f"Detected modification: {self.active_file_path}"
+            )
             self.callback(query, self.active_file_path)
 
 
