@@ -3,3 +3,4 @@ watchdog
 psutil
 dbt-core
 pyyaml
+pygments

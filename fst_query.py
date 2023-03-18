@@ -8,6 +8,9 @@ import subprocess
 import yaml
 import sys
 from tabulate import tabulate
+from pygments import highlight
+from pygments.lexers import SqlLexer
+from pygments.formatters import TerminalFormatter
 
 
 CURRENT_WORKING_DIR = os.getcwd()
@@ -97,6 +100,7 @@ def get_duckdb_file_path():
         return db_path
 
 
+
 def handle_query(query, file_path):
     print(f"Received query:\n{query}")
     if query.strip():
@@ -121,7 +125,8 @@ def handle_query(query, file_path):
                 if compiled_sql_file:
                     with open(compiled_sql_file, "r") as file:
                         compiled_query = file.read()
-                        print(f"Executing compiled query:\n{compiled_query}")
+                        colored_compiled_query = highlight(compiled_query, SqlLexer(), TerminalFormatter())  # Add this line
+                        print(f"Executing compiled query:\n{colored_compiled_query}")  # Modify this line
                         duckdb_file_path = get_duckdb_file_path()
                         print(f"Using DuckDB file: {duckdb_file_path}")
 
@@ -132,7 +137,7 @@ def handle_query(query, file_path):
                         print(f"Compilation time: {compile_time:.2f} seconds")
                         print(f"Query time: {query_time:.2f} seconds")
 
-                        print("Result Preview:")
+                        print("Result:")
                         print(tabulate(result, headers=column_names, tablefmt="grid"))
                 else:
                     print("Couldn't find the compiled SQL file.")
@@ -143,6 +148,7 @@ def handle_query(query, file_path):
             print(f"Error: {e}")
     else:
         print("Empty query.")
+
 
 
 if __name__ == "__main__":
