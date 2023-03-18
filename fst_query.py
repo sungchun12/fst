@@ -12,7 +12,7 @@ from pygments import highlight
 from pygments.lexers import SqlLexer
 from pygments.formatters import TerminalFormatter
 from functools import lru_cache
-from concurrent.futures import ThreadPoolExecutor
+from threading import Timer
 
 CURRENT_WORKING_DIR = os.getcwd()
 
@@ -24,15 +24,31 @@ class QueryHandler(FileSystemEventHandler):
     def __init__(self, callback, active_file_path: str):
         self.callback = callback
         self.active_file_path = active_file_path
+        self.debounce_timer = None  # Add this line
 
     def on_modified(self, event):
         if event.src_path.endswith(".sql"):
             active_file = get_active_file(self.active_file_path)
             if active_file and active_file == event.src_path:
                 print(f"Detected modification: {event.src_path}")
-                with open(event.src_path, "r") as file:
-                    query = file.read()
-                    self.callback(query, self.active_file_path)
+                if self.debounce_timer is None:  # Add this line
+                    self.debounce_timer = Timer(1.5, self.debounce_query)  # Modify this line
+                    self.debounce_timer.start()  # Add this line
+                else:
+                    self.debounce_timer.cancel()  # Add this line
+                    self.debounce_timer = Timer(1.5, self.debounce_query)  # Modify this line
+                    self.debounce_timer.start()  # Add this line
+
+    def debounce_query(self):
+        if self.debounce_timer is not None:  # Add this line
+            self.debounce_timer.cancel()  # Add this line
+            self.debounce_timer = None  # Add this line
+        query = None  # Add this line
+        with open(self.active_file_path, "r") as file:  # Modify this line
+            query = file.read()  # Modify this line
+        if query is not None and query.strip():
+            self.callback(query, self.active_file_path)
+
 
 @lru_cache
 def execute_query(query: str, db_file: str):
@@ -102,7 +118,6 @@ def get_duckdb_file_path():
     return db_path
 
 
-
 def handle_query(query, file_path):
     print(f"Received query:\n{query}")
     if query.strip():
@@ -127,13 +142,17 @@ def handle_query(query, file_path):
                 if compiled_sql_file:
                     with open(compiled_sql_file, "r") as file:
                         compiled_query = file.read()
-                        colored_compiled_query = highlight(compiled_query, SqlLexer(), TerminalFormatter())
+                        colored_compiled_query = highlight(
+                            compiled_query, SqlLexer(), TerminalFormatter()
+                        )
                         print(f"Executing compiled query:\n{colored_compiled_query}")
                         duckdb_file_path = get_duckdb_file_path()
                         print(f"Using DuckDB file: {duckdb_file_path}")
 
                         start_time = time.time()
-                        result, column_names = execute_query(compiled_query, duckdb_file_path)
+                        result, column_names = execute_query(
+                            compiled_query, duckdb_file_path
+                        )
                         query_time = time.time() - start_time
 
                         print(f"Compilation time: {compile_time:.2f} seconds")
@@ -150,7 +169,6 @@ def handle_query(query, file_path):
             print(f"Error: {e}")
     else:
         print("Empty query.")
-
 
 
 if __name__ == "__main__":
