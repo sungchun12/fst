@@ -30,9 +30,10 @@ class QueryHandler(FileSystemEventHandler):
 
 def execute_query(query: str, db_file: str):
     connection = duckdb.connect(database=db_file, read_only=False)
-    result = connection.execute(query).fetchmany(10)
+    result = connection.execute(query).fetchmany(5)
+    column_names = [desc[0] for desc in connection.description]
     connection.close()
-    return result
+    return result, column_names
 
 
 def watch_directory(directory: str, callback, active_file_path: str):
@@ -72,7 +73,9 @@ def find_compiled_sql_file(file_path):
     project_directory = CURRENT_WORKING_DIR
     project_name = get_project_name()
     relative_file_path = os.path.relpath(active_file, project_directory)
-    compiled_directory = os.path.join(project_directory, "target", "compiled", project_name)
+    compiled_directory = os.path.join(
+        project_directory, "target", "compiled", project_name
+    )
     compiled_file_path = os.path.join(compiled_directory, relative_file_path)
     print(f"compiled_file_path: {compiled_file_path}")
     return compiled_file_path if os.path.exists(compiled_file_path) else None
@@ -94,12 +97,11 @@ def get_duckdb_file_path():
         return db_path
 
 
-
 def handle_query(query, file_path):
     print(f"Received query:\n{query}")
     if query.strip():
         try:
-            start_time = time.time()  # Add this line
+            start_time = time.time()
 
             active_file = get_active_file(file_path)
             if not active_file:
@@ -111,7 +113,7 @@ def handle_query(query, file_path):
                 capture_output=True,
                 text=True,
             )
-            compile_time = time.time() - start_time  # Add this line
+            compile_time = time.time() - start_time
 
             if result.returncode == 0:
                 print("dbt compile was successful.")
@@ -123,16 +125,15 @@ def handle_query(query, file_path):
                         duckdb_file_path = get_duckdb_file_path()
                         print(f"Using DuckDB file: {duckdb_file_path}")
 
-                        start_time = time.time()  # Add this line
-                        result = execute_query(compiled_query, duckdb_file_path)
-                        query_time = time.time() - start_time  # Add this line
+                        start_time = time.time()
+                        result, column_names = execute_query(compiled_query, duckdb_file_path)
+                        query_time = time.time() - start_time
 
                         print(f"Compilation time: {compile_time:.2f} seconds")
                         print(f"Query time: {query_time:.2f} seconds")
 
-                        print("Result:")
-                        headers = ["ID", "First Name", "Last Initial", "Created At", "Updated At", "Orders Count", "Total Spent"]
-                        print(tabulate(result, headers=headers, tablefmt="grid"))
+                        print("Result Preview:")
+                        print(tabulate(result, headers=column_names, tablefmt="grid"))
                 else:
                     print("Couldn't find the compiled SQL file.")
             else:
