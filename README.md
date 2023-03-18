@@ -14,7 +14,7 @@ Let's make it the overwhelming normal that these questions are answered in secon
 
 - What dashboards will this help vs. hurt?
 
-- What’s a data preview based on my updates look like?
+- What’s a data preview based on my updates look like? (e.g. 5 rows) FIRST THING TO DO
 
 - How many scheduled data pipelines are tied to this model?
 
