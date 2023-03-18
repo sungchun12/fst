@@ -4,10 +4,10 @@ import time
 from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-import psutil
 import subprocess
 import yaml
 import sys
+from tabulate import tabulate
 
 
 CURRENT_WORKING_DIR = os.getcwd()
@@ -51,7 +51,6 @@ def watch_directory(directory: str, callback, active_file_path: str):
 
 def get_active_file(file_path: str):
     if file_path and file_path.endswith(".sql"):
-        print(f"active file: {file_path}")
         return file_path
     else:
         print("No active SQL file found.")
@@ -95,10 +94,13 @@ def get_duckdb_file_path():
         return db_path
 
 
+
 def handle_query(query, file_path):
     print(f"Received query:\n{query}")
     if query.strip():
         try:
+            start_time = time.time()  # Add this line
+
             active_file = get_active_file(file_path)
             if not active_file:
                 return
@@ -109,6 +111,8 @@ def handle_query(query, file_path):
                 capture_output=True,
                 text=True,
             )
+            compile_time = time.time() - start_time  # Add this line
+
             if result.returncode == 0:
                 print("dbt compile was successful.")
                 compiled_sql_file = find_compiled_sql_file(file_path)
@@ -118,10 +122,17 @@ def handle_query(query, file_path):
                         print(f"Executing compiled query:\n{compiled_query}")
                         duckdb_file_path = get_duckdb_file_path()
                         print(f"Using DuckDB file: {duckdb_file_path}")
+
+                        start_time = time.time()  # Add this line
                         result = execute_query(compiled_query, duckdb_file_path)
+                        query_time = time.time() - start_time  # Add this line
+
+                        print(f"Compilation time: {compile_time:.2f} seconds")
+                        print(f"Query time: {query_time:.2f} seconds")
+
                         print("Result:")
-                        for row in result:
-                            print(row)
+                        headers = ["ID", "First Name", "Last Initial", "Created At", "Updated At", "Orders Count", "Total Spent"]
+                        print(tabulate(result, headers=headers, tablefmt="grid"))
                 else:
                     print("Couldn't find the compiled SQL file.")
             else:
