@@ -18,6 +18,7 @@ from termcolor import colored
 import logging
 from colorlog import ColoredFormatter
 
+observer = None
 
 def setup_logger():
     log_format = "%(asctime)s - %(levelname)s - %(log_color)s%(message)s%(reset)s"
@@ -91,6 +92,9 @@ def execute_query(query: str, db_file: str):
 
 
 def watch_directory(directory: str, callback, active_file_path: str):
+    global observer
+    setup_logger()
+    logging.info("Started watching directory...")
     event_handler = QueryHandler(callback, active_file_path)
     observer = Observer()
     observer.schedule(event_handler, path=directory, recursive=True)
@@ -101,7 +105,8 @@ def watch_directory(directory: str, callback, active_file_path: str):
             time.sleep(1)
     except KeyboardInterrupt:
         observer.stop()
-    observer.join()
+        observer.join()
+        logging.info("Stopped watching directory.")
 
 
 def get_active_file(file_path: str):
