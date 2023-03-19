@@ -1,5 +1,6 @@
 import duckdb
 import os
+import re
 import time
 from pathlib import Path
 from watchdog.observers import Observer
@@ -13,6 +14,8 @@ from pygments.lexers import SqlLexer
 from pygments.formatters import TerminalFormatter
 from functools import lru_cache
 from threading import Timer
+from termcolor import colored
+
 
 CURRENT_WORKING_DIR = os.getcwd()
 
@@ -119,6 +122,26 @@ def get_duckdb_file_path():
     return db_path
 
 
+def generate_test_yaml(model_name, column_names, active_file_path):
+    test_yaml = f"version: 2\n\nmodels:\n  - name: {model_name}\n    columns:"
+
+    for column in column_names:
+        test_yaml += f"\n      - name: {column}\n        description: 'A placeholder description for {column}'"
+
+        if re.search(r"(_id|_ID)$", column):
+            test_yaml += "\n        tests:\n          - unique\n          - not_null"
+
+    active_file_directory = os.path.dirname(active_file_path)
+    active_file_name, _ = os.path.splitext(os.path.basename(active_file_path))
+    new_yaml_file_name = f"{active_file_name}.yml"
+    new_yaml_file_path = os.path.join(active_file_directory, new_yaml_file_name)
+
+    with open(new_yaml_file_path, "w") as file:
+        file.write(test_yaml)
+
+    return new_yaml_file_path
+
+
 def handle_query(query, file_path):
     print(f"Received query:\n{query}")
     if query.strip():
@@ -129,7 +152,7 @@ def handle_query(query, file_path):
             if not active_file:
                 return
             model_name = get_model_name_from_file(active_file)
-            print(f"Running dbt build with the modified SQL file ({model_name})...")
+            print(f"Running `dbt build` with the modified SQL file ({model_name})...")
             result = subprocess.run(
                 ["dbt", "build", "--select", model_name],
                 capture_output=True,
@@ -137,11 +160,41 @@ def handle_query(query, file_path):
             )
             compile_time = time.time() - start_time
 
+            stdout_without_finished = result.stdout.split("Finished running")[0]
+
             if result.returncode == 0:
-                print("dbt build was successful.")
+                print("`dbt build` was successful.")
             else:
-                print("Error running dbt build:")
-                print(result.stdout)
+                print("Error running `dbt build`:")
+                print(stdout_without_finished)
+
+            if (
+                "PASS" not in stdout_without_finished
+                and "FAIL" not in stdout_without_finished
+            ):
+                compiled_sql_file = find_compiled_sql_file(file_path)
+                if compiled_sql_file:
+                    with open(compiled_sql_file, "r") as file:
+                        compiled_query = file.read()
+                    duckdb_file_path = get_duckdb_file_path()
+                    _, column_names = execute_query(compiled_query, duckdb_file_path)
+
+                    warning_message = colored(
+                        "Warning: No tests were run with the `dbt build` command.\nConsider adding tests to your project.",
+                        "yellow",
+                        attrs=["bold"],
+                    )
+                    print(warning_message)
+
+                    test_yaml_path = generate_test_yaml(
+                        model_name, column_names, active_file
+                    )
+                    test_yaml_path_warning_message = colored(
+                        f"\nGenerated test YAML file: {test_yaml_path}",
+                        "yellow",
+                        attrs=["bold"],
+                    )
+                    print(test_yaml_path_warning_message)
 
             compiled_sql_file = find_compiled_sql_file(file_path)
             if compiled_sql_file:
@@ -160,7 +213,7 @@ def handle_query(query, file_path):
                     )
                     query_time = time.time() - start_time
 
-                    print(f"dbt build time: {compile_time:.2f} seconds")
+                    print(f"`dbt build` time: {compile_time:.2f} seconds")
                     print(f"Query time: {query_time:.2f} seconds")
 
                     print("Result:")
