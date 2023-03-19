@@ -16,5 +16,8 @@ setup(
         "pyyaml",
         "pygments",
         "colorlog",
+        "duckdb",
+        "termcolor",
+        "tabulate",
     ],
 )
