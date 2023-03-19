@@ -61,19 +61,16 @@ fst start --file-path /Users/sung/Desktop/fst/jaffle_shop_duckdb/models/new_file
 
 ```shell
 # example of running this tool on each modification to the sql file
+# pro tip: open up the compiled query in a split IDE window for hot reloading as you develope
  ~/De/fst/jaffle_shop_duckdb python ../fst_query.py /Users/sung/Desktop/fst/jaffle_shop_duckdb/models/new_file.sql
 2023-03-18 18:39:15 - INFO - Watching directory: /Users/sung/Desktop/fst/jaffle_shop_duckdb
 2023-03-18 18:39:34 - INFO - Detected modification: /Users/sung/Desktop/fst/jaffle_shop_duckdb/models/new_file.sql
-2023-03-18 18:39:34 - INFO - Received query:
-select * from {{ ref("customers") }} where customer_lifetime_value > 30 order by customer_lifetime_value desc limit 10
 2023-03-18 18:39:34 - INFO - Running `dbt build` with the modified SQL file (new_file)...
 2023-03-18 18:39:37 - INFO - `dbt build` was successful.
 2023-03-18 18:39:37 - INFO - project_name: jaffle_shop
 2023-03-18 18:39:37 - WARNING - Warning: No tests were run with the `dbt build` command. Consider adding tests to your project.
 2023-03-18 18:39:37 - WARNING - Generated test YAML file: /Users/sung/Desktop/fst/jaffle_shop_duckdb/models/new_file.yml
 2023-03-18 18:39:37 - INFO - Executing compiled query from: /Users/sung/Desktop/fst/jaffle_shop_duckdb/target/compiled/jaffle_shop/models/new_file.sql
-select * from "jaffle_shop"."main"."customers" where customer_lifetime_value > 30 order by customer_lifetime_value desc limit 10
-
 2023-03-18 18:39:37 - INFO - Using DuckDB file: jaffle_shop.duckdb
 2023-03-18 18:39:37 - INFO - `dbt build` time: 3.38 seconds
 2023-03-18 18:39:37 - INFO - Query time: 0.00 seconds
