@@ -103,7 +103,6 @@ def find_compiled_sql_file(file_path):
         project_directory, "target", "compiled", project_name
     )
     compiled_file_path = os.path.join(compiled_directory, relative_file_path)
-    print(f"compiled_file_path: {compiled_file_path}")
     return compiled_file_path if os.path.exists(compiled_file_path) else None
 
 
@@ -203,7 +202,9 @@ def handle_query(query, file_path):
                     colored_compiled_query = highlight(
                         compiled_query, SqlLexer(), TerminalFormatter()
                     )
-                    print(f"Executing compiled query:\n{colored_compiled_query}")
+                    print(
+                        f"Executing compiled query from: {compiled_sql_file}\n{colored_compiled_query}"
+                    )
                     duckdb_file_path = get_duckdb_file_path()
                     print(f"Using DuckDB file: {duckdb_file_path}")
 
