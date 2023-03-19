@@ -15,6 +15,13 @@ from pygments.formatters import TerminalFormatter
 from functools import lru_cache
 from threading import Timer
 from termcolor import colored
+import logging
+
+logging.basicConfig(
+    format="%(levelname)s [%(asctime)s]: %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 
 CURRENT_WORKING_DIR = os.getcwd()
@@ -50,7 +57,7 @@ class QueryHandler(FileSystemEventHandler):
         with open(self.active_file_path, "r") as file:
             query = file.read()
         if query is not None and query.strip():
-            print(f"Detected modification: {self.active_file_path}")
+            logging.info(f"Detected modification: {self.active_file_path}")
             self.callback(query, self.active_file_path)
 
 
@@ -81,14 +88,14 @@ def get_active_file(file_path: str):
     if file_path and file_path.endswith(".sql"):
         return file_path
     else:
-        print("No active SQL file found.")
+        logging.warning("No active SQL file found.")
         return None
 
 
 @lru_cache
 def get_project_name():
     project_name = list(PROFILES.keys())[0]
-    print(f"project_name: {project_name}")
+    logging.info(f"project_name: {project_name}")
     return project_name
 
 
@@ -142,7 +149,7 @@ def generate_test_yaml(model_name, column_names, active_file_path):
 
 
 def handle_query(query, file_path):
-    print(f"Received query:\n{query}")
+    logging.info(f"Received query:\n{query}")
     if query.strip():
         try:
             start_time = time.time()
@@ -151,7 +158,9 @@ def handle_query(query, file_path):
             if not active_file:
                 return
             model_name = get_model_name_from_file(active_file)
-            print(f"Running `dbt build` with the modified SQL file ({model_name})...")
+            logging.info(
+                f"Running `dbt build` with the modified SQL file ({model_name})..."
+            )
             result = subprocess.run(
                 ["dbt", "build", "--select", model_name],
                 capture_output=True,
@@ -162,10 +171,10 @@ def handle_query(query, file_path):
             stdout_without_finished = result.stdout.split("Finished running")[0]
 
             if result.returncode == 0:
-                print("`dbt build` was successful.")
+                logging.info("`dbt build` was successful.")
             else:
-                print("Error running `dbt build`:")
-                print(stdout_without_finished)
+                logging.error("Error running `dbt build`:")
+                logging.error(stdout_without_finished)
 
             if (
                 "PASS" not in stdout_without_finished
@@ -179,21 +188,21 @@ def handle_query(query, file_path):
                     _, column_names = execute_query(compiled_query, duckdb_file_path)
 
                     warning_message = colored(
-                        "Warning: No tests were run with the `dbt build` command.\nConsider adding tests to your project.",
+                        "Warning: No tests were run with the `dbt build` command. Consider adding tests to your project.",
                         "yellow",
                         attrs=["bold"],
                     )
-                    print(warning_message)
+                    logging.warning(warning_message)
 
                     test_yaml_path = generate_test_yaml(
                         model_name, column_names, active_file
                     )
                     test_yaml_path_warning_message = colored(
-                        f"\nGenerated test YAML file: {test_yaml_path}",
+                        f"Generated test YAML file: {test_yaml_path}",
                         "yellow",
                         attrs=["bold"],
                     )
-                    print(test_yaml_path_warning_message)
+                    logging.warning(test_yaml_path_warning_message)
 
             compiled_sql_file = find_compiled_sql_file(file_path)
             if compiled_sql_file:
@@ -202,11 +211,11 @@ def handle_query(query, file_path):
                     colored_compiled_query = highlight(
                         compiled_query, SqlLexer(), TerminalFormatter()
                     )
-                    print(
+                    logging.info(
                         f"Executing compiled query from: {compiled_sql_file}\n{colored_compiled_query}"
                     )
                     duckdb_file_path = get_duckdb_file_path()
-                    print(f"Using DuckDB file: {duckdb_file_path}")
+                    logging.info(f"Using DuckDB file: {duckdb_file_path}")
 
                     start_time = time.time()
                     result, column_names = execute_query(
@@ -214,17 +223,20 @@ def handle_query(query, file_path):
                     )
                     query_time = time.time() - start_time
 
-                    print(f"`dbt build` time: {compile_time:.2f} seconds")
-                    print(f"Query time: {query_time:.2f} seconds")
+                    logging.info(f"`dbt build` time: {compile_time:.2f} seconds")
+                    logging.info(f"Query time: {query_time:.2f} seconds")
 
-                    print("Result:")
-                    print(tabulate(result, headers=column_names, tablefmt="grid"))
+                    logging.info(
+                        "Result Preview"
+                        + "\n"
+                        + tabulate(result, headers=column_names, tablefmt="grid")
+                    )
             else:
-                print("Couldn't find the compiled SQL file.")
+                logging.error("Couldn't find the compiled SQL file.")
         except Exception as e:
-            print(f"Error: {e}")
+            logging.error(f"Error: {e}")
     else:
-        print("Empty query.")
+        logging.error("Empty query.")
 
 
 if __name__ == "__main__":
@@ -234,5 +246,5 @@ if __name__ == "__main__":
         active_file_path = None
 
     project_directory = CURRENT_WORKING_DIR
-    print(f"Watching directory: {project_directory}")
+    logging.info(f"Watching directory: {project_directory}")
     watch_directory(project_directory, handle_query, active_file_path)

@@ -4,3 +4,4 @@ psutil
 dbt-core
 pyyaml
 pygments
+colorlog
