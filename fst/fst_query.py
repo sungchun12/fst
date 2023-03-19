@@ -204,6 +204,7 @@ def handle_query(query, file_path):
             if (
                 "PASS" not in stdout_without_finished
                 and "FAIL" not in stdout_without_finished
+                and "ERROR" not in stdout_without_finished
             ):
                 compiled_sql_file = find_compiled_sql_file(file_path)
                 if compiled_sql_file:
