@@ -20,6 +20,7 @@ from colorlog import ColoredFormatter
 
 observer = None
 
+
 def setup_logger():
     log_format = "%(asctime)s - %(levelname)s - %(log_color)s%(message)s%(reset)s"
 
@@ -174,7 +175,6 @@ def generate_test_yaml(model_name, column_names, active_file_path):
 
 
 def handle_query(query, file_path):
-    logging.info(f"Received query:\n{query}")
     if query.strip():
         try:
             start_time = time.time()
@@ -237,9 +237,7 @@ def handle_query(query, file_path):
                     colored_compiled_query = highlight(
                         compiled_query, SqlLexer(), TerminalFormatter()
                     )
-                    logging.info(
-                        f"Executing compiled query from: {compiled_sql_file}\n{colored_compiled_query}"
-                    )
+                    logging.info(f"Executing compiled query from: {compiled_sql_file}")
                     duckdb_file_path = get_duckdb_file_path()
                     logging.info(f"Using DuckDB file: {duckdb_file_path}")
 
