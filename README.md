@@ -56,7 +56,8 @@ source venv/bin/activate
 pip3 install -r requirements.txt
 pip3 install -e ../ # installing the fst package locally
 # fst start --file-path <file path>
-fst start --file-path /Users/sung/Desktop/fst/jaffle_shop_duckdb/models/new_file.sql
+code .
+fst start --file-path models/customers.sql
 ```
 
 ```shell
