@@ -28,7 +28,7 @@ def setup_logger():
         reset=True,
         log_colors={
             "DEBUG": "cyan",
-            "INFO": "blue",
+            "INFO": "light_blue",
             "WARNING": "yellow",
             "ERROR": "red",
             "CRITICAL": "red,bg_white",
