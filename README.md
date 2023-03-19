@@ -34,11 +34,16 @@ Let's make it the overwhelming normal that these questions are answered in secon
 
 ```bash
 # my command to run this tool in an infinite loop in a split terminal
+git clone https://github.com/sungchun12/fst.git
+cd fst
 git clone https://github.com/dbt-labs/jaffle_shop_duckdb.git
 cd jaffle_shop_duckdb
-python -m venv venv
-source venv/bin/activate   
-pip install -e ../ # installing the fst package locally
+python3 -m venv venv
+source venv/bin/activate
+python3 -m pip install --upgrade pip setuptools wheel
+source venv/bin/activate
+pip3 install -r requirements.txt
+pip3 install -e ../ # installing the fst package locally
 # fst start --file-path <file path>
 fst start --file-path /Users/sung/Desktop/fst/jaffle_shop_duckdb/models/new_file.sql
 ```

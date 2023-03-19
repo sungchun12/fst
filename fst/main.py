@@ -1,5 +1,5 @@
 import argparse
-import fst_query
+from fst import fst_query
 
 def main():
     parser = argparse.ArgumentParser(description="Real-time query execution for FST.")
