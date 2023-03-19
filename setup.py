@@ -19,5 +19,6 @@ setup(
         "duckdb",
         "termcolor",
         "tabulate",
+        "click"
     ],
 )
