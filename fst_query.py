@@ -47,9 +47,7 @@ class QueryHandler(FileSystemEventHandler):
         with open(self.active_file_path, "r") as file:
             query = file.read()
         if query is not None and query.strip():
-            print(
-                f"Detected modification: {self.active_file_path}"
-            )
+            print(f"Detected modification: {self.active_file_path}")
             self.callback(query, self.active_file_path)
 
 
@@ -131,16 +129,16 @@ def handle_query(query, file_path):
             if not active_file:
                 return
             model_name = get_model_name_from_file(active_file)
-            print(f"Compiling dbt with the modified SQL file ({model_name})...")
+            print(f"Running dbt build with the modified SQL file ({model_name})...")
             result = subprocess.run(
-                ["dbt", "compile", "--models", model_name],
+                ["dbt", "build", "--select", model_name],
                 capture_output=True,
                 text=True,
             )
             compile_time = time.time() - start_time
 
             if result.returncode == 0:
-                print("dbt compile was successful.")
+                print("dbt build was successful.")
                 compiled_sql_file = find_compiled_sql_file(file_path)
                 if compiled_sql_file:
                     with open(compiled_sql_file, "r") as file:
@@ -158,7 +156,7 @@ def handle_query(query, file_path):
                         )
                         query_time = time.time() - start_time
 
-                        print(f"Compilation time: {compile_time:.2f} seconds")
+                        print(f"dbt build time: {compile_time:.2f} seconds")
                         print(f"Query time: {query_time:.2f} seconds")
 
                         print("Result:")
@@ -166,7 +164,7 @@ def handle_query(query, file_path):
                 else:
                     print("Couldn't find the compiled SQL file.")
             else:
-                print("Error running dbt compile:")
+                print("Error running dbt build:")
                 print(result.stdout)
         except Exception as e:
             print(f"Error: {e}")
