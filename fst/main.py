@@ -1,10 +1,21 @@
 import click
+import os
+import yaml
 from fst import fst_query
 
 
 @click.group()
 def main():
     pass
+
+
+def get_model_paths():
+    with open("dbt_project.yml", "r") as file:
+        dbt_project = yaml.safe_load(file)
+        model_paths = dbt_project.get("model-paths", [])
+        return [
+            os.path.join(fst_query.CURRENT_WORKING_DIR, path) for path in model_paths
+        ]
 
 
 @main.command()
@@ -16,10 +27,16 @@ def main():
     help="Path to the SQL file you want to watch.",
 )
 def start(file_path):
+    model_paths = get_model_paths()
     if file_path:
+        click.echo(f"Started watching directory: {os.path.dirname(file_path)}")
         fst_query.watch_directory(
-            fst_query.CURRENT_WORKING_DIR, fst_query.handle_query, file_path
+            os.path.dirname(file_path), fst_query.handle_query, file_path
         )
+    elif model_paths:
+        for path in model_paths:
+            click.echo(f"Started watching directory: {path}")
+            fst_query.watch_directory(path, fst_query.handle_query, None)
     else:
         click.echo("Please provide a file path using the --file-path option.")
 
@@ -50,10 +67,16 @@ def restart(file_path):
     else:
         click.echo("No observer was running. Starting a new one.")
 
+    model_paths = get_model_paths()
     if file_path:
+        click.echo(f"Started watching directory: {os.path.dirname(file_path)}")
         fst_query.watch_directory(
-            fst_query.CURRENT_WORKING_DIR, fst_query.handle_query, file_path
+            os.path.dirname(file_path), fst_query.handle_query, file_path
         )
+    elif model_paths:
+        for path in model_paths:
+            click.echo(f"Started watching directory: {path}")
+            fst_query.watch_directory(path, fst_query.handle_query, None)
     else:
         click.echo("Please provide a file path using the --file-path option.")
 
