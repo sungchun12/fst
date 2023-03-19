@@ -16,12 +16,32 @@ from functools import lru_cache
 from threading import Timer
 from termcolor import colored
 import logging
+from colorlog import ColoredFormatter
 
-logging.basicConfig(
-    format="%(levelname)s [%(asctime)s]: %(message)s",
-    level=logging.INFO,
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+
+def setup_logger():
+    log_format = "%(asctime)s - %(levelname)s - %(log_color)s%(message)s%(reset)s"
+
+    formatter = ColoredFormatter(
+        log_format,
+        datefmt="%Y-%m-%d %H:%M:%S",
+        reset=True,
+        log_colors={
+            "DEBUG": "cyan",
+            "INFO": "blue",
+            "WARNING": "yellow",
+            "ERROR": "red",
+            "CRITICAL": "red,bg_white",
+        },
+    )
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+
+    logger.addHandler(stream_handler)
 
 
 CURRENT_WORKING_DIR = os.getcwd()
@@ -240,6 +260,7 @@ def handle_query(query, file_path):
 
 
 if __name__ == "__main__":
+    setup_logger()
     if len(sys.argv) > 1:
         active_file_path = sys.argv[1]
     else:
