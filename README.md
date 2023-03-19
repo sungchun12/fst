@@ -31,6 +31,15 @@ Let's make it the overwhelming normal that these questions are answered in secon
 
 - What’s a data diff compared to current production data?
 
+> **Note:** This tool is still in development. Please feel free to contribute to this project.
+
+## Description
+
+This is a file watcher that runs `dbt build` and a duckdb query preview on a SQL file when it detects a modification. It also generates a test file for the modified SQL file if tests are not detected. The compiled SQL file is then executed to get the query result.
+
+It works with any SQL file within the current working directory of the dbt project. It also works with any SQL file within the `models` directory of the project.
+
+You'll notice for the sake of MVP, I am running nested git clones to get this working. I'll release to pypi soon.
 
 ```bash
 # my command to run this tool in an infinite loop in a split terminal
