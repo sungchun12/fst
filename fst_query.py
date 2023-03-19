@@ -139,33 +139,34 @@ def handle_query(query, file_path):
 
             if result.returncode == 0:
                 print("dbt build was successful.")
-                compiled_sql_file = find_compiled_sql_file(file_path)
-                if compiled_sql_file:
-                    with open(compiled_sql_file, "r") as file:
-                        compiled_query = file.read()
-                        colored_compiled_query = highlight(
-                            compiled_query, SqlLexer(), TerminalFormatter()
-                        )
-                        print(f"Executing compiled query:\n{colored_compiled_query}")
-                        duckdb_file_path = get_duckdb_file_path()
-                        print(f"Using DuckDB file: {duckdb_file_path}")
-
-                        start_time = time.time()
-                        result, column_names = execute_query(
-                            compiled_query, duckdb_file_path
-                        )
-                        query_time = time.time() - start_time
-
-                        print(f"dbt build time: {compile_time:.2f} seconds")
-                        print(f"Query time: {query_time:.2f} seconds")
-
-                        print("Result:")
-                        print(tabulate(result, headers=column_names, tablefmt="grid"))
-                else:
-                    print("Couldn't find the compiled SQL file.")
             else:
                 print("Error running dbt build:")
                 print(result.stdout)
+
+            compiled_sql_file = find_compiled_sql_file(file_path)
+            if compiled_sql_file:
+                with open(compiled_sql_file, "r") as file:
+                    compiled_query = file.read()
+                    colored_compiled_query = highlight(
+                        compiled_query, SqlLexer(), TerminalFormatter()
+                    )
+                    print(f"Executing compiled query:\n{colored_compiled_query}")
+                    duckdb_file_path = get_duckdb_file_path()
+                    print(f"Using DuckDB file: {duckdb_file_path}")
+
+                    start_time = time.time()
+                    result, column_names = execute_query(
+                        compiled_query, duckdb_file_path
+                    )
+                    query_time = time.time() - start_time
+
+                    print(f"dbt build time: {compile_time:.2f} seconds")
+                    print(f"Query time: {query_time:.2f} seconds")
+
+                    print("Result:")
+                    print(tabulate(result, headers=column_names, tablefmt="grid"))
+            else:
+                print("Couldn't find the compiled SQL file.")
         except Exception as e:
             print(f"Error: {e}")
     else:
