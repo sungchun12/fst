@@ -39,6 +39,8 @@ This is a file watcher that runs `dbt build` and a duckdb query preview on a SQL
 
 It works with any SQL file within the current working directory of the dbt project. It also works with any SQL file within the `models` directory of the project.
 
+It works with any SQL file within the `models/` directory of the dbt project. You must run this tool from the root directory of the dbt project.
+
 You'll notice for the sake of MVP, I am running nested git clones to get this working. I'll release to pypi soon.
 
 ```bash
