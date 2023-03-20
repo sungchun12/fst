@@ -30,13 +30,11 @@ def start(file_path):
     model_paths = get_model_paths()
     if file_path:
         click.echo(f"Started watching directory: {os.path.dirname(file_path)}")
-        fst_query.watch_directory(
-            os.path.dirname(file_path), fst_query.handle_query, file_path
-        )
+        fst_query.watch_directory(path, fst_query.handle_query, fst_query.find_compiled_sql_file)
     elif model_paths:
         for path in model_paths:
             click.echo(f"Started watching directory: {path}")
-            fst_query.watch_directory(path, fst_query.handle_query, None)
+            fst_query.watch_directory(path, fst_query.handle_query, fst_query.find_compiled_sql_file)
     else:
         click.echo("Please provide a file path using the --file-path option.")
 
@@ -70,13 +68,11 @@ def restart(file_path):
     model_paths = get_model_paths()
     if file_path:
         click.echo(f"Started watching directory: {os.path.dirname(file_path)}")
-        fst_query.watch_directory(
-            os.path.dirname(file_path), fst_query.handle_query, file_path
-        )
+        fst_query.watch_directory(path, fst_query.handle_query, fst_query.find_compiled_sql_file)
     elif model_paths:
         for path in model_paths:
             click.echo(f"Started watching directory: {path}")
-            fst_query.watch_directory(path, fst_query.handle_query, None)
+            fst_query.watch_directory(path, fst_query.handle_query, fst_query.find_compiled_sql_file)
     else:
         click.echo("Please provide a file path using the --file-path option.")
 

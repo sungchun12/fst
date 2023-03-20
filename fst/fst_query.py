@@ -17,6 +17,7 @@ from threading import Timer
 from termcolor import colored
 import logging
 from colorlog import ColoredFormatter
+import glob
 
 observer = None
 
@@ -54,33 +55,33 @@ with open("profiles.yml", "r") as file:
 
 
 class QueryHandler(FileSystemEventHandler):
-    def __init__(self, callback, active_file_path: str):
+    def __init__(self, callback, find_compiled_sql_file):
         self.callback = callback
-        self.active_file_path = active_file_path
+        self.find_compiled_sql_file = find_compiled_sql_file
         self.debounce_timer = None
 
     def on_modified(self, event):
         if event.src_path.endswith(".sql"):
-            active_file = get_active_file(self.active_file_path)
-            if active_file and active_file == event.src_path:
-                if self.debounce_timer is None:
-                    self.debounce_timer = Timer(1.5, self.debounce_query)
-                    self.debounce_timer.start()
-                else:
-                    self.debounce_timer.cancel()
-                    self.debounce_timer = Timer(1.5, self.debounce_query)
-                    self.debounce_timer.start()
+            if self.debounce_timer is None:
+                self.debounce_timer = Timer(1.5, self.debounce_query, args=[event.src_path])
+                self.debounce_timer.start()
+            else:
+                self.debounce_timer.cancel()
+                self.debounce_timer = Timer(1.5, self.debounce_query, args=[event.src_path])
+                self.debounce_timer.start()
 
-    def debounce_query(self):
+    def debounce_query(self, active_file_path):
         if self.debounce_timer is not None:
             self.debounce_timer.cancel()
             self.debounce_timer = None
         query = None
-        with open(self.active_file_path, "r") as file:
+        with open(active_file_path, "r") as file:
             query = file.read()
         if query is not None and query.strip():
-            logging.info(f"Detected modification: {self.active_file_path}")
-            self.callback(query, self.active_file_path)
+            logging.info(f"Detected modification: {active_file_path}")
+            files = glob.glob(os.path.join(os.path.dirname(active_file_path), '*.sql'))
+            query = self.find_compiled_sql_file(files)
+            self.callback(query, files)
 
 
 @lru_cache
@@ -92,11 +93,10 @@ def execute_query(query: str, db_file: str):
     return result, column_names
 
 
-def watch_directory(directory: str, callback, active_file_path: str):
-    global observer
+def watch_directory(directory: str, callback, find_compiled_sql_file):
     setup_logger()
     logging.info("Started watching directory...")
-    event_handler = QueryHandler(callback, active_file_path)
+    event_handler = QueryHandler(callback, find_compiled_sql_file)
     observer = Observer()
     observer.schedule(event_handler, path=directory, recursive=True)
     observer.start()
@@ -110,9 +110,10 @@ def watch_directory(directory: str, callback, active_file_path: str):
         logging.info("Stopped watching directory.")
 
 
-def get_active_file(file_path: str):
-    if file_path and file_path.endswith(".sql"):
-        return file_path
+def get_active_file(files):
+    for file in files:
+        if file.endswith(".sql"):
+            return os.path.join(file)
     else:
         logging.warning("No active SQL file found.")
         return None
@@ -125,8 +126,8 @@ def get_project_name():
     return project_name
 
 
-def find_compiled_sql_file(file_path):
-    active_file = get_active_file(file_path)
+def find_compiled_sql_file(files):
+    active_file = get_active_file(files)
     if not active_file:
         return None
     project_directory = CURRENT_WORKING_DIR
@@ -174,12 +175,12 @@ def generate_test_yaml(model_name, column_names, active_file_path):
     return new_yaml_file_path
 
 
-def handle_query(query, file_path):
+def handle_query(query, files):
     if query.strip():
         try:
             start_time = time.time()
 
-            active_file = get_active_file(file_path)
+            active_file = get_active_file(files)
             if not active_file:
                 return
             model_name = get_model_name_from_file(active_file)
@@ -206,7 +207,8 @@ def handle_query(query, file_path):
                 and "FAIL" not in stdout_without_finished
                 and "ERROR" not in stdout_without_finished
             ):
-                compiled_sql_file = find_compiled_sql_file(file_path)
+                compiled_sql_file = find_compiled_sql_file(files)
+                print(f"compiled_sql_file: {compiled_sql_file}")
                 if compiled_sql_file:
                     with open(compiled_sql_file, "r") as file:
                         compiled_query = file.read()
@@ -230,7 +232,7 @@ def handle_query(query, file_path):
                     )
                     logging.warning(test_yaml_path_warning_message)
 
-            compiled_sql_file = find_compiled_sql_file(file_path)
+            compiled_sql_file = find_compiled_sql_file(files)
             if compiled_sql_file:
                 with open(compiled_sql_file, "r") as file:
                     compiled_query = file.read()
@@ -272,4 +274,4 @@ if __name__ == "__main__":
 
     project_directory = CURRENT_WORKING_DIR
     logging.info(f"Watching directory: {project_directory}")
-    watch_directory(project_directory, handle_query, active_file_path)
+    watch_directory(project_directory, handle_query, find_compiled_sql_file)
