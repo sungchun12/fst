@@ -70,18 +70,17 @@ class QueryHandler(FileSystemEventHandler):
                 self.debounce_timer = Timer(1.5, self.debounce_query, args=[event.src_path])
                 self.debounce_timer.start()
 
-    def debounce_query(self, active_file_path):
+    def debounce_query(self, active_file):
         if self.debounce_timer is not None:
             self.debounce_timer.cancel()
             self.debounce_timer = None
         query = None
-        with open(active_file_path, "r") as file:
+        with open(active_file, "r") as file:
             query = file.read()
         if query is not None and query.strip():
-            logging.info(f"Detected modification: {active_file_path}")
-            files = glob.glob(os.path.join(os.path.dirname(active_file_path), '*.sql'))
-            query = self.find_compiled_sql_file(files)
-            self.callback(query, files)
+            logging.info(f"Detected modification: {active_file}")
+            self.callback(query, active_file)  # Pass active_file here
+
 
 
 @lru_cache
@@ -111,9 +110,17 @@ def watch_directory(directory: str, callback, find_compiled_sql_file):
 
 
 def get_active_file(files):
+    latest_sql_file = None
+    latest_mtime = None
     for file in files:
         if file.endswith(".sql"):
-            return os.path.join(file)
+            file_path = os.path.join(file)
+            mtime = os.path.getmtime(file_path)
+            if latest_mtime is None or mtime > latest_mtime:
+                latest_mtime = mtime
+                latest_sql_file = file_path
+    if latest_sql_file:
+        return latest_sql_file
     else:
         logging.warning("No active SQL file found.")
         return None
@@ -126,18 +133,20 @@ def get_project_name():
     return project_name
 
 
-def find_compiled_sql_file(files):
-    active_file = get_active_file(files)
+def find_compiled_sql_file(active_file: str):
     if not active_file:
         return None
     project_directory = CURRENT_WORKING_DIR
     project_name = get_project_name()
-    relative_file_path = os.path.relpath(active_file, project_directory)
-    compiled_directory = os.path.join(
-        project_directory, "target", "compiled", project_name
-    )
-    compiled_file_path = os.path.join(compiled_directory, relative_file_path)
-    return compiled_file_path if os.path.exists(compiled_file_path) else None
+    model_name = os.path.splitext(os.path.basename(active_file))[0]
+    compiled_directory = os.path.join(project_directory, "target", "compiled", project_name)
+
+    for root, _, files in os.walk(compiled_directory):
+        for file in files:
+            if file.endswith(".sql") and model_name in file:
+                return os.path.join(root, file)
+
+    return None
 
 
 def get_model_name_from_file(file_path: str):
@@ -155,7 +164,7 @@ def get_duckdb_file_path():
     return db_path
 
 
-def generate_test_yaml(model_name, column_names, active_file_path):
+def generate_test_yaml(model_name, column_names, active_file):
     test_yaml = f"version: 2\n\nmodels:\n  - name: {model_name}\n    columns:"
 
     for column in column_names:
@@ -164,8 +173,8 @@ def generate_test_yaml(model_name, column_names, active_file_path):
         if re.search(r"(_id|_ID)$", column):
             test_yaml += "\n        tests:\n          - unique\n          - not_null"
 
-    active_file_directory = os.path.dirname(active_file_path)
-    active_file_name, _ = os.path.splitext(os.path.basename(active_file_path))
+    active_file_directory = os.path.dirname(active_file)
+    active_file_name, _ = os.path.splitext(os.path.basename(active_file))
     new_yaml_file_name = f"{active_file_name}.yml"
     new_yaml_file_path = os.path.join(active_file_directory, new_yaml_file_name)
 
@@ -175,23 +184,28 @@ def generate_test_yaml(model_name, column_names, active_file_path):
     return new_yaml_file_path
 
 
-def handle_query(query, files):
+def run_dbt_build(model_name):
+    logging.info(f"Running `dbt build` with the modified SQL file ({model_name})...")
+    result = subprocess.run(
+        ["dbt", "build", "--select", f"model.{model_name}"],
+        capture_output=True,
+        text=True,
+    )
+    return result
+
+
+def handle_query(query, active_file):
     if query.strip():
         try:
             start_time = time.time()
 
-            active_file = get_active_file(files)
+            model_name = os.path.splitext(os.path.basename(active_file))[0]
+
+            run_dbt_build(model_name)
             if not active_file:
                 return
             model_name = get_model_name_from_file(active_file)
-            logging.info(
-                f"Running `dbt build` with the modified SQL file ({model_name})..."
-            )
-            result = subprocess.run(
-                ["dbt", "build", "--select", model_name],
-                capture_output=True,
-                text=True,
-            )
+            result = run_dbt_build(model_name)
             compile_time = time.time() - start_time
 
             stdout_without_finished = result.stdout.split("Finished running")[0]
@@ -207,8 +221,7 @@ def handle_query(query, files):
                 and "FAIL" not in stdout_without_finished
                 and "ERROR" not in stdout_without_finished
             ):
-                compiled_sql_file = find_compiled_sql_file(files)
-                print(f"compiled_sql_file: {compiled_sql_file}")
+                compiled_sql_file = find_compiled_sql_file(active_file)
                 if compiled_sql_file:
                     with open(compiled_sql_file, "r") as file:
                         compiled_query = file.read()
@@ -232,7 +245,7 @@ def handle_query(query, files):
                     )
                     logging.warning(test_yaml_path_warning_message)
 
-            compiled_sql_file = find_compiled_sql_file(files)
+            compiled_sql_file = find_compiled_sql_file(active_file)
             if compiled_sql_file:
                 with open(compiled_sql_file, "r") as file:
                     compiled_query = file.read()
@@ -268,9 +281,9 @@ def handle_query(query, files):
 if __name__ == "__main__":
     setup_logger()
     if len(sys.argv) > 1:
-        active_file_path = sys.argv[1]
+        active_file = sys.argv[1]
     else:
-        active_file_path = None
+        active_file = None
 
     project_directory = CURRENT_WORKING_DIR
     logging.info(f"Watching directory: {project_directory}")
