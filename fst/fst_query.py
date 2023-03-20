@@ -274,3 +274,5 @@ if __name__ == "__main__":
     project_directory = CURRENT_WORKING_DIR
     logging.info(f"Watching directory: {project_directory}")
     watch_directory(project_directory, handle_query, active_file_path)
+
+awoifjoawijf
