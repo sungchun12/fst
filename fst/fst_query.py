@@ -197,9 +197,10 @@ def handle_query(query, file_path):
 
             if result.returncode == 0:
                 logging.info("`dbt build` was successful.")
+                logging.info(result.stdout)
             else:
                 logging.error("Error running `dbt build`:")
-                logging.error(stdout_without_finished)
+                logging.error(result.stdout)
 
             if (
                 "PASS" not in stdout_without_finished
