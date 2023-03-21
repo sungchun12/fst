@@ -1,36 +1,47 @@
-import click
 import os
+import time
+import click
+from watchdog.observers import Observer
+
+from fst.file_utils import get_models_directory
+from fst.query_handler import handle_query, DynamicQueryHandler, QueryHandler
 from fst.logger import setup_logger
-from fst.query_handler import handle_query
-from fst.directory_watcher import watch_directory
-from fst.file_utils import get_active_file, get_model_paths
+
 
 @click.group()
 def main():
     setup_logger()
     pass
 
+
 @main.command()
 @click.option(
     "--file-path",
-    type=click.Path(
-        exists=True, file_okay=True, dir_okay=False, readable=True, resolve_path=True
-    ),
-    help="Path to the SQL file you want to watch.",
+    default=None,
+    help="Path to the SQL file to be watched.",
 )
 def start(file_path):
-    model_paths = get_model_paths()
-    if file_path:
-        click.echo(f"Started watching directory: {os.path.dirname(file_path)}")
-        watch_directory(
-            os.path.dirname(file_path), handle_query, file_path
-        )
-    elif model_paths:
-        for path in model_paths:
-            click.echo(f"Started watching directory: {path}")
-            watch_directory(path, handle_query, None)
+    project_dir = os.path.abspath(".")
+    models_dir = get_models_directory(project_dir)
+
+    if file_path is None:
+        click.echo(f"Started watching directory dynamically: {models_dir}")
+        event_handler = DynamicQueryHandler(handle_query, models_dir)
     else:
-        click.echo("Please provide a file path using the --file-path option.")
+        click.echo(f"Started watching file: {file_path}")
+        event_handler = QueryHandler(handle_query, file_path)
+
+    observer = Observer()
+    observer.schedule(event_handler, models_dir, recursive=False)
+    observer.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
 
 if __name__ == "__main__":
     main()

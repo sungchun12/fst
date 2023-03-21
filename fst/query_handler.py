@@ -1,14 +1,45 @@
 from watchdog.events import FileSystemEventHandler
 from threading import Timer
 import logging
+import os
 import time
 import subprocess
 from tabulate import tabulate
 
-from fst.file_utils import get_active_file, get_model_name_from_file, find_compiled_sql_file, generate_test_yaml
+from fst.file_utils import (
+    get_active_file,
+    get_model_name_from_file,
+    find_compiled_sql_file,
+    generate_test_yaml,
+)
 from fst.db_utils import get_duckdb_file_path, execute_query
 
 logger = logging.getLogger(__name__)
+
+
+class DynamicQueryHandler(FileSystemEventHandler):
+    def __init__(self, callback, models_dir: str):
+        self.callback = callback
+        self.models_dir = models_dir
+        self.debounce_timer = None
+
+    def on_modified(self, event):
+        if event.src_path.endswith(".sql"):
+            if os.path.dirname(event.src_path) == self.models_dir:
+                handle_query_for_file(event.src_path)
+                if self.debounce_timer is None:
+                    self.debounce_timer = Timer(1.5, self.debounce_query)
+                    self.debounce_timer.start()
+                else:
+                    self.debounce_timer.cancel()
+                    self.debounce_timer = Timer(1.5, self.debounce_query)
+                    self.debounce_timer.start()
+
+    def debounce_query(self):
+        if self.debounce_timer is not None:
+            self.debounce_timer.cancel()
+            self.debounce_timer = None
+
 
 class QueryHandler(FileSystemEventHandler):
     def __init__(self, callback, active_file_path: str):
@@ -38,6 +69,14 @@ class QueryHandler(FileSystemEventHandler):
         if query is not None and query.strip():
             logger.info(f"Detected modification: {self.active_file_path}")
             self.callback(query, self.active_file_path)
+
+
+def handle_query_for_file(file_path):
+    with open(file_path, "r") as file:
+        query = file.read()
+    if query is not None and query.strip():
+        handle_query(query, file_path)
+
 
 def handle_query(query, file_path):
     if query.strip():
@@ -80,14 +119,16 @@ def handle_query(query, file_path):
                     _, column_names = execute_query(compiled_query, duckdb_file_path)
 
                     warning_message = "Warning: No tests were run with the `dbt build` command. Consider adding tests to your project."
-                    
+
                     logger.warning(warning_message)
 
                     test_yaml_path = generate_test_yaml(
                         model_name, column_names, active_file
                     )
-                    test_yaml_path_warning_message = f"Generated test YAML file: {test_yaml_path}"
-                    
+                    test_yaml_path_warning_message = (
+                        f"Generated test YAML file: {test_yaml_path}"
+                    )
+
                     logger.warning(test_yaml_path_warning_message)
 
             compiled_sql_file = find_compiled_sql_file(file_path)

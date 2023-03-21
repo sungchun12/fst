@@ -60,3 +60,10 @@ def get_model_paths():
         return [
             os.path.join(os.getcwd(), path) for path in model_paths
         ]
+
+def get_models_directory(project_dir):
+    dbt_project_file = os.path.join(project_dir, 'dbt_project.yml')
+    with open(dbt_project_file, 'r') as file:
+        dbt_project = yaml.safe_load(file)
+    models_subdir = dbt_project.get('model-paths')[0]
+    return os.path.join(project_dir, models_subdir)
