@@ -89,18 +89,3 @@ fst start --file-path models/customers.sql
 +---------------+--------------+-------------+---------------+---------------------+--------------------+---------------------------+
 |            54 | Rose         | M.          | 2018-01-07    | 2018-03-24          |                  5 |                        57 |
 +---------------+--------------+-------------+---------------+---------------------+--------------------+---------------------------+
-```
-
-## Note for running on Windows / wsl 
-
-The Filesystem used by WSL2 (9P) is not supported by the *watchdog* the file observing library. 
-As an effect, changes to files are not being detected. To resolve the issue, downgrade your WSL version to 1.
-```bash
-wsl --set-version Ubuntu 1
-```
-
-
-
-## Note for running on Windows / wsl 
-
-The Filesystem used by WSL2 (9P) is not supported 
