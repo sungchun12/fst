@@ -1,6 +1,14 @@
 from watchdog.events import FileSystemEventHandler
 from threading import Timer
 import logging
+import time
+import subprocess
+from tabulate import tabulate
+
+from fst.file_utils import get_active_file, get_model_name_from_file, find_compiled_sql_file, generate_test_yaml
+from fst.db_utils import get_duckdb_file_path, execute_query
+
+logger = logging.getLogger(__name__)
 
 class QueryHandler(FileSystemEventHandler):
     def __init__(self, callback, active_file_path: str):
@@ -28,7 +36,7 @@ class QueryHandler(FileSystemEventHandler):
         with open(self.active_file_path, "r") as file:
             query = file.read()
         if query is not None and query.strip():
-            logging.info(f"Detected modification: {self.active_file_path}")
+            logger.info(f"Detected modification: {self.active_file_path}")
             self.callback(query, self.active_file_path)
 
 def handle_query(query, file_path):
@@ -40,7 +48,7 @@ def handle_query(query, file_path):
             if not active_file:
                 return
             model_name = get_model_name_from_file(active_file)
-            logging.info(
+            logger.info(
                 f"Running `dbt build` with the modified SQL file ({model_name})..."
             )
             result = subprocess.run(
@@ -53,11 +61,11 @@ def handle_query(query, file_path):
             stdout_without_finished = result.stdout.split("Finished running")[0]
 
             if result.returncode == 0:
-                logging.info("`dbt build` was successful.")
-                logging.info(result.stdout)
+                logger.info("`dbt build` was successful.")
+                logger.info(result.stdout)
             else:
-                logging.error("Error running `dbt build`:")
-                logging.error(result.stdout)
+                logger.error("Error running `dbt build`:")
+                logger.error(result.stdout)
 
             if (
                 "PASS" not in stdout_without_finished
@@ -71,33 +79,24 @@ def handle_query(query, file_path):
                     duckdb_file_path = get_duckdb_file_path()
                     _, column_names = execute_query(compiled_query, duckdb_file_path)
 
-                    warning_message = colored(
-                        "Warning: No tests were run with the `dbt build` command. Consider adding tests to your project.",
-                        "yellow",
-                        attrs=["bold"],
-                    )
-                    logging.warning(warning_message)
+                    warning_message = "Warning: No tests were run with the `dbt build` command. Consider adding tests to your project."
+                    
+                    logger.warning(warning_message)
 
                     test_yaml_path = generate_test_yaml(
                         model_name, column_names, active_file
                     )
-                    test_yaml_path_warning_message = colored(
-                        f"Generated test YAML file: {test_yaml_path}",
-                        "yellow",
-                        attrs=["bold"],
-                    )
-                    logging.warning(test_yaml_path_warning_message)
+                    test_yaml_path_warning_message = f"Generated test YAML file: {test_yaml_path}"
+                    
+                    logger.warning(test_yaml_path_warning_message)
 
             compiled_sql_file = find_compiled_sql_file(file_path)
             if compiled_sql_file:
                 with open(compiled_sql_file, "r") as file:
                     compiled_query = file.read()
-                    colored_compiled_query = highlight(
-                        compiled_query, SqlLexer(), TerminalFormatter()
-                    )
-                    logging.info(f"Executing compiled query from: {compiled_sql_file}")
+                    logger.info(f"Executing compiled query from: {compiled_sql_file}")
                     duckdb_file_path = get_duckdb_file_path()
-                    logging.info(f"Using DuckDB file: {duckdb_file_path}")
+                    logger.info(f"Using DuckDB file: {duckdb_file_path}")
 
                     start_time = time.time()
                     result, column_names = execute_query(
@@ -105,17 +104,17 @@ def handle_query(query, file_path):
                     )
                     query_time = time.time() - start_time
 
-                    logging.info(f"`dbt build` time: {compile_time:.2f} seconds")
-                    logging.info(f"Query time: {query_time:.2f} seconds")
+                    logger.info(f"`dbt build` time: {compile_time:.2f} seconds")
+                    logger.info(f"Query time: {query_time:.2f} seconds")
 
-                    logging.info(
+                    logger.info(
                         "Result Preview"
                         + "\n"
                         + tabulate(result, headers=column_names, tablefmt="grid")
                     )
             else:
-                logging.error("Couldn't find the compiled SQL file.")
+                logger.error("Couldn't find the compiled SQL file.")
         except Exception as e:
-            logging.error(f"Error: {e}")
+            logger.error(f"Error: {e}")
     else:
-        logging.error("Empty query.")
+        logger.error("Empty query.")

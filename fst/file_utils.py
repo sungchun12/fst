@@ -2,12 +2,16 @@ import os
 import yaml
 import logging
 import re
+from fst.constants import CURRENT_WORKING_DIR
+from fst.db_utils import get_project_name
+
+logger = logging.getLogger(__name__)
 
 def get_active_file(file_path: str):
     if file_path and file_path.endswith(".sql"):
         return file_path
     else:
-        logging.warning("No active SQL file found.")
+        logger.warning("No active SQL file found.")
         return None
 
 def find_compiled_sql_file(file_path):

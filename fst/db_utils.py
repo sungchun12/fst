@@ -1,5 +1,10 @@
 import duckdb
 import os
+from functools import lru_cache
+from fst.constants import PROFILES
+import logging
+
+logger = logging.getLogger(__name__)
 
 @lru_cache
 def execute_query(query: str, db_file: str):
@@ -19,5 +24,5 @@ def get_duckdb_file_path():
 @lru_cache
 def get_project_name():
     project_name = list(PROFILES.keys())[0]
-    logging.info(f"project_name: {project_name}")
+    logger.info(f"project_name: {project_name}")
     return project_name

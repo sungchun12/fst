@@ -7,6 +7,7 @@ from fst.file_utils import get_active_file, get_model_paths
 
 @click.group()
 def main():
+    setup_logger()
     pass
 
 @main.command()
