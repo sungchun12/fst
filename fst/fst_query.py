@@ -3,7 +3,7 @@ import os
 import re
 import time
 from pathlib import Path
-from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 from watchdog.events import FileSystemEventHandler
 import subprocess
 import yaml
@@ -97,7 +97,7 @@ def watch_directory(directory: str, callback, active_file_path: str):
     setup_logger()
     logging.info("Started watching directory...")
     event_handler = QueryHandler(callback, active_file_path)
-    observer = Observer()
+    observer = PollingObserver()
     observer.schedule(event_handler, path=directory, recursive=True)
     observer.start()
 
