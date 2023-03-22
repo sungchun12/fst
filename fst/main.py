@@ -1,7 +1,7 @@
 import os
 import time
 import click
-from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 
 from fst.file_utils import get_models_directory
 from fst.query_handler import handle_query, DynamicQueryHandler, QueryHandler
@@ -31,7 +31,7 @@ def start(file_path):
         click.echo(f"Started watching file: {file_path}")
         event_handler = QueryHandler(handle_query, file_path)
 
-    observer = Observer()
+    observer = PollingObserver()
     observer.schedule(event_handler, models_dir, recursive=False)
     observer.start()
 

@@ -1,6 +1,6 @@
 import os
 import time
-from watchdog.observers import Observer
+from watchdog.observers.polling import PollingObserver
 from fst.query_handler import QueryHandler
 import logging
 
@@ -12,7 +12,7 @@ def watch_directory(directory: str, callback, active_file_path: str):
     global observer
     logger.info("Started watching directory...")
     event_handler = QueryHandler(callback, active_file_path)
-    observer = Observer()
+    observer = PollingObserver()
     observer.schedule(event_handler, path=directory, recursive=True)
     observer.start()
 
