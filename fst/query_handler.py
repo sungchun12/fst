@@ -87,7 +87,7 @@ def handle_query(query, file_path):
                 return
             model_name = get_model_name_from_file(active_file)
             logger.info(
-                f"Running `dbt build` with the modified SQL file ({model_name})..."
+                f"Running `dbt build` with the modified SQL file ({active_file})..."
             )
             result = subprocess.run(
                 ["dbt", "build", "--select", model_name],

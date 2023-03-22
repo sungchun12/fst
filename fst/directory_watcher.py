@@ -8,12 +8,11 @@ logger = logging.getLogger(__name__)
 
 observer = None
 
-def watch_directory(directory: str, callback, active_file_path: str):
+def watch_directory(event_handler, file_path: str, ):
     global observer
-    logger.info("Started watching directory...")
-    event_handler = QueryHandler(callback, active_file_path)
+    logger.info(f"Started watching directory dynamically: {file_path}")
     observer = PollingObserver()
-    observer.schedule(event_handler, path=directory, recursive=True)
+    observer.schedule(event_handler, path=file_path, recursive=False)
     observer.start()
 
     try:
@@ -22,4 +21,4 @@ def watch_directory(directory: str, callback, active_file_path: str):
     except KeyboardInterrupt:
         observer.stop()
         observer.join()
-        logger.info("Stopped watching directory.")
+        logger.info(f"Stopped watching directory dynamically: {file_path}")
