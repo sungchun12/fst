@@ -104,7 +104,6 @@ def handle_query(query, file_path):
                         logger.warning(
                             "Running `dbt test` with the generated test YAML file..."
                         )
-                        time.sleep(0.5)
                         result_rerun = subprocess.run(
                             ["dbt", "test", "--select", model_name],
                             capture_output=True,
