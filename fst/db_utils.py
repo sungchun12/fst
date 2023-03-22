@@ -1,7 +1,7 @@
 import duckdb
 import os
 from functools import lru_cache
-from fst.constants import PROFILES
+from fst.config_defaults import PROFILES
 import logging
 
 logger = logging.getLogger(__name__)

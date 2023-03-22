@@ -2,7 +2,7 @@ import os
 import yaml
 import logging
 import re
-from fst.constants import CURRENT_WORKING_DIR
+from fst.config_defaults import CURRENT_WORKING_DIR
 from fst.db_utils import get_project_name
 
 logger = logging.getLogger(__name__)
