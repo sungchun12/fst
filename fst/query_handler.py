@@ -98,19 +98,24 @@ def handle_query(query, file_path):
                         f"Generated test YAML file: {test_yaml_path}"
                     )
 
-                    logger.warning(test_yaml_path_warning_message)
-                    logger.warning(
-                        "Rerunning `dbt build` with the generated test YAML file..."
-                    )
-                    time.sleep(0.5)
-                    result_rerun = subprocess.run(
-                        ["dbt", "build", "--select", model_name],
-                        capture_output=True,
-                        text=True,
-                    )
-                    if result_rerun.returncode == 0:
-                        logger.info("`dbt build` with generated tests was successful.")
-                        logger.info(result.stdout)
+                    # Verify if the newly generated test YAML file exists
+                    if os.path.isfile(test_yaml_path):
+                        logger.warning(test_yaml_path_warning_message)
+                        logger.warning(
+                            "Running `dbt test` with the generated test YAML file..."
+                        )
+                        time.sleep(0.5)
+                        result_rerun = subprocess.run(
+                            ["dbt", "test", "--select", model_name],
+                            capture_output=True,
+                            text=True,
+                        )
+                        if result_rerun.returncode == 0:
+                            logger.info("`dbt test` with generated tests was successful.")
+                            logger.info(result_rerun.stdout)
+                    else:
+                        logger.error("Couldn't find the generated test YAML file.")
+
 
             compiled_sql_file = find_compiled_sql_file(file_path)
             if compiled_sql_file:
