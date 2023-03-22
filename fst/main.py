@@ -13,7 +13,7 @@ def main():
     pass
 
 
-@main.command() #TODO: add file path flag
+@main.command()
 @click.option("--path", "-p", default=CURRENT_WORKING_DIR, help="dbt project root directory")
 def start(path):
     project_dir = path

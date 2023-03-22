@@ -47,36 +47,6 @@ class DynamicQueryHandler(FileSystemEventHandler):
             handle_query(query, file_path)
 
 
-class QueryHandler(FileSystemEventHandler):
-    def __init__(self, callback, active_file_path: str):
-        self.callback = callback
-        self.active_file_path = active_file_path
-        self.debounce_timer = None
-
-    def on_modified(self, event):
-        if event.src_path.endswith(".sql"):
-            active_file = get_active_file(self.active_file_path)
-            if active_file and active_file == event.src_path:
-                if self.debounce_timer is None:
-                    self.debounce_timer = Timer(1.5, self.debounce_query)
-                    self.debounce_timer.start()
-                else:
-                    self.debounce_timer.cancel()
-                    self.debounce_timer = Timer(1.5, self.debounce_query)
-                    self.debounce_timer.start()
-
-    def debounce_query(self):
-        if self.debounce_timer is not None:
-            self.debounce_timer.cancel()
-            self.debounce_timer = None
-        query = None
-        with open(self.active_file_path, "r") as file:
-            query = file.read()
-        if query is not None and query.strip():
-            logger.info(f"Detected modification: {self.active_file_path}")
-            self.callback(query, self.active_file_path)
-
-
 def handle_query(query, file_path):
     if query.strip():
         try:
@@ -129,7 +99,9 @@ def handle_query(query, file_path):
                     )
 
                     logger.warning(test_yaml_path_warning_message)
-                    logger.warning("Rerunning `dbt build` with the generated test YAML file...")
+                    logger.warning(
+                        "Rerunning `dbt build` with the generated test YAML file..."
+                    )
                     time.sleep(0.5)
                     result_rerun = subprocess.run(
                         ["dbt", "build", "--select", model_name],

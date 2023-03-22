@@ -1,7 +1,6 @@
 import os
 import time
 from watchdog.observers.polling import PollingObserver
-from fst.query_handler import QueryHandler
 import logging
 
 logger = logging.getLogger(__name__)
