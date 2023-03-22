@@ -10,7 +10,7 @@ observer = None
 
 def watch_directory(event_handler, file_path: str, ):
     global observer
-    logger.info(f"Started watching directory dynamically: {file_path}")
+    logger.info(f"Started watching directory: {file_path}")
     observer = PollingObserver()
     observer.schedule(event_handler, path=file_path, recursive=False)
     observer.start()
@@ -21,4 +21,4 @@ def watch_directory(event_handler, file_path: str, ):
     except KeyboardInterrupt:
         observer.stop()
         observer.join()
-        logger.info(f"Stopped watching directory dynamically: {file_path}")
+        logger.info(f"Stopped watching directory: {file_path}")
