@@ -26,19 +26,25 @@ class DynamicQueryHandler(FileSystemEventHandler):
     def on_modified(self, event):
         if event.src_path.endswith(".sql"):
             if os.path.dirname(event.src_path) == self.models_dir:
-                handle_query_for_file(event.src_path)
-                if self.debounce_timer is None:
-                    self.debounce_timer = Timer(1.5, self.debounce_query)
-                    self.debounce_timer.start()
-                else:
-                    self.debounce_timer.cancel()
-                    self.debounce_timer = Timer(1.5, self.debounce_query)
-                    self.debounce_timer.start()
+                self.debounce()
+                self.handle_query_for_file(event.src_path)
+
+    def debounce(self):
+        if self.debounce_timer is not None:
+            self.debounce_timer.cancel()
+        self.debounce_timer = Timer(1.5, self.debounce_query)
+        self.debounce_timer.start()
 
     def debounce_query(self):
         if self.debounce_timer is not None:
             self.debounce_timer.cancel()
             self.debounce_timer = None
+
+    def handle_query_for_file(self, file_path):
+        with open(file_path, "r") as file:
+            query = file.read()
+        if query is not None and query.strip():
+            handle_query(query, file_path)
 
 
 class QueryHandler(FileSystemEventHandler):
@@ -69,13 +75,6 @@ class QueryHandler(FileSystemEventHandler):
         if query is not None and query.strip():
             logger.info(f"Detected modification: {self.active_file_path}")
             self.callback(query, self.active_file_path)
-
-
-def handle_query_for_file(file_path):
-    with open(file_path, "r") as file:
-        query = file.read()
-    if query is not None and query.strip():
-        handle_query(query, file_path)
 
 
 def handle_query(query, file_path):
@@ -130,6 +129,16 @@ def handle_query(query, file_path):
                     )
 
                     logger.warning(test_yaml_path_warning_message)
+                    logger.warning("Rerunning `dbt build` with the generated test YAML file...")
+                    time.sleep(0.5)
+                    result_rerun = subprocess.run(
+                        ["dbt", "build", "--select", model_name],
+                        capture_output=True,
+                        text=True,
+                    )
+                    if result_rerun.returncode == 0:
+                        logger.info("`dbt build` with generated tests was successful.")
+                        logger.info(result.stdout)
 
             compiled_sql_file = find_compiled_sql_file(file_path)
             if compiled_sql_file:
