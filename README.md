@@ -43,6 +43,7 @@ It works with any SQL file within the `models/` directory of the dbt project. Yo
 
 You'll notice for the sake of MVP, I am running nested git clones to get this working. I'll release to pypi soon.
 
+
 ```bash
 # my command to run this tool in an infinite loop in a split terminal
 git clone https://github.com/sungchun12/fst.git
@@ -55,6 +56,7 @@ python3 -m pip install --upgrade pip setuptools wheel
 source venv/bin/activate
 pip3 install -r requirements.txt
 pip3 install -e ../ # installing the fst package locally
+dbt build # Optional, so that upstream dependencies are created
 code .
 fst start
 ```
