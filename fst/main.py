@@ -15,21 +15,12 @@ def main():
 
 
 @main.command()
-@click.option(
-    "--file-path",
-    default=None,
-    help="Path to the SQL file to be watched.",
-)
-def start(file_path):
+def start():
     project_dir = os.path.abspath(".")
     models_dir = get_models_directory(project_dir)
 
-    if file_path is None:
-        click.echo(f"Started watching directory dynamically: {models_dir}")
-        event_handler = DynamicQueryHandler(handle_query, models_dir)
-    else:
-        click.echo(f"Started watching file: {file_path}")
-        event_handler = QueryHandler(handle_query, file_path)
+    click.echo(f"Started watching directory dynamically: {models_dir}")
+    event_handler = DynamicQueryHandler(handle_query, models_dir)
 
     observer = PollingObserver()
     observer.schedule(event_handler, models_dir, recursive=False)
