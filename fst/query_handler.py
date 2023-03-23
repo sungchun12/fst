@@ -8,11 +8,13 @@ from tabulate import tabulate
 
 from fst.file_utils import (
     get_active_file,
+    find_tests_for_model,
     get_model_name_from_file,
     find_compiled_sql_file,
     generate_test_yaml,
 )
 from fst.db_utils import get_duckdb_file_path, execute_query
+from fst.config_defaults import DISABLE_TESTS
 
 logger = logging.getLogger(__name__)
 
@@ -47,100 +49,102 @@ class DynamicQueryHandler(FileSystemEventHandler):
             handle_query(query, file_path)
 
 
-def handle_query(query, file_path):
-    if query.strip():
-        try:
-            start_time = time.time()
+    
+def generate_and_run_tests(model_name, column_names, active_file):
+    test_yaml_path = generate_test_yaml(
+        model_name, column_names, active_file
+    )
+    test_yaml_path_warning_message = (
+        f"Generated test YAML file: {test_yaml_path}"
+    )
 
-            active_file = get_active_file(file_path)
-            if not active_file:
-                return
-            model_name = get_model_name_from_file(active_file)
-            logger.info(
-                f"Running `dbt build` with the modified SQL file ({active_file})..."
-            )
-            result = subprocess.run(
-                ["dbt", "build", "--select", model_name],
-                capture_output=True,
-                text=True,
-            )
-            compile_time = time.time() - start_time
-
-            stdout_without_finished = result.stdout.split("Finished running")[0]
-
-            if result.returncode == 0:
-                logger.info("`dbt build` was successful.")
-                logger.info(result.stdout)
-            else:
-                logger.error("Error running `dbt build`:")
-                logger.error(result.stdout)
-
-            if (
-                "PASS" not in stdout_without_finished
-                and "FAIL" not in stdout_without_finished
-                and "ERROR" not in stdout_without_finished
-            ):
-                compiled_sql_file = find_compiled_sql_file(file_path)
-                if compiled_sql_file:
-                    with open(compiled_sql_file, "r") as file:
-                        compiled_query = file.read()
-                    duckdb_file_path = get_duckdb_file_path()
-                    _, column_names = execute_query(compiled_query, duckdb_file_path)
-
-                    warning_message = "Warning: No tests were run with the `dbt build` command. Consider adding tests to your project."
-
-                    logger.warning(warning_message)
-
-                    test_yaml_path = generate_test_yaml(
-                        model_name, column_names, active_file
-                    )
-                    test_yaml_path_warning_message = (
-                        f"Generated test YAML file: {test_yaml_path}"
-                    )
-
-                    # Verify if the newly generated test YAML file exists
-                    if os.path.isfile(test_yaml_path):
-                        logger.warning(test_yaml_path_warning_message)
-                        logger.warning(
-                            "Running `dbt test` with the generated test YAML file..."
-                        )
-                        result_rerun = subprocess.run(
-                            ["dbt", "test", "--select", model_name],
-                            capture_output=True,
-                            text=True,
-                        )
-                        if result_rerun.returncode == 0:
-                            logger.info("`dbt test` with generated tests was successful.")
-                            logger.info(result_rerun.stdout)
-                    else:
-                        logger.error("Couldn't find the generated test YAML file.")
-
-
-            compiled_sql_file = find_compiled_sql_file(file_path)
-            if compiled_sql_file:
-                with open(compiled_sql_file, "r") as file:
-                    compiled_query = file.read()
-                    logger.info(f"Executing compiled query from: {compiled_sql_file}")
-                    duckdb_file_path = get_duckdb_file_path()
-                    logger.info(f"Using DuckDB file: {duckdb_file_path}")
-
-                    start_time = time.time()
-                    result, column_names = execute_query(
-                        compiled_query, duckdb_file_path
-                    )
-                    query_time = time.time() - start_time
-
-                    logger.info(f"`dbt build` time: {compile_time:.2f} seconds")
-                    logger.info(f"Query time: {query_time:.2f} seconds")
-
-                    logger.info(
-                        "Result Preview"
-                        + "\n"
-                        + tabulate(result, headers=column_names, tablefmt="grid")
-                    )
-            else:
-                logger.error("Couldn't find the compiled SQL file.")
-        except Exception as e:
-            logger.error(f"Error: {e}")
+    # Verify if the newly generated test YAML file exists
+    if os.path.isfile(test_yaml_path):
+        logger.warning(test_yaml_path_warning_message)
+        logger.warning(
+            "Running `dbt test` with the generated test YAML file..."
+        )
+        result_rerun = subprocess.run(
+            ["dbt", "test", "--select", model_name],
+            capture_output=True,
+            text=True,
+        )
+        if result_rerun.returncode == 0:
+            logger.info("`dbt test` with generated tests was successful.")
+        else:
+            logger.info("`dbt test` with generated tests failed.")
+            
+        logger.info(result_rerun.stdout)
     else:
-        logger.error("Empty query.")
+        logger.error("Couldn't find the generated test YAML file.")
+
+def handle_query(query, file_path):
+    if not query.strip():
+        logger.info("Query is empty.")
+        return
+    
+    try:
+        start_time = time.time()
+
+        active_file = get_active_file(file_path)
+        if not active_file:
+            return
+        model_name = get_model_name_from_file(active_file)
+
+        logger.info(
+            f"Running `dbt build` with the modified SQL file ({active_file})..."
+        )
+        result = subprocess.run(
+            ["dbt", "build", "--select", model_name],
+            capture_output=True,
+            text=True,
+        )
+
+        compile_time = time.time() - start_time
+
+        if result.returncode == 0:
+            logger.info("`dbt build` was successful.")
+            logger.info(result.stdout)
+        else:
+            logger.error("Error running `dbt build`:")
+            logger.error(result.stdout)
+
+        
+        compiled_sql_file = find_compiled_sql_file(file_path)
+        if compiled_sql_file:
+            with open(compiled_sql_file, "r") as file:
+                compiled_query = file.read()
+                logger.info(f"Executing compiled query from: {compiled_sql_file}")
+                duckdb_file_path = get_duckdb_file_path()
+                logger.info(f"Using DuckDB file: {duckdb_file_path}")
+
+                start_time = time.time()
+                result, column_names = execute_query(
+                    compiled_query, duckdb_file_path
+                )
+                query_time = time.time() - start_time
+
+                logger.info(f"`dbt build` time: {compile_time:.2f} seconds")
+                logger.info(f"Query time: {query_time:.2f} seconds")
+
+                logger.info(
+                    "Result Preview"
+                    + "\n"
+                    + tabulate(result, headers=column_names, tablefmt="grid")
+                )
+                 # Check if tests are generated for the model
+                tests_exist = find_tests_for_model(model_name) 
+
+                if not tests_exist and not DISABLE_TESTS:
+                    response = input(f"No tests found for the '{model_name}' model. Would you like to generate tests? (yes/no): ")
+
+                    if response.lower() == 'yes':
+                        logger.info(f"Generating tests for the '{model_name}' model...")
+                        generate_and_run_tests(model_name, column_names, active_file)
+                    else:
+                        logger.info(f"Skipping tests generation for the '{model_name}' model.")   
+
+        else:
+            logger.error("Couldn't find the compiled SQL file.")
+    except Exception as e:
+        logger.error(f"Error: {e}")

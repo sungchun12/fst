@@ -27,6 +27,39 @@ def find_compiled_sql_file(file_path):
     compiled_file_path = os.path.join(compiled_directory, relative_file_path)
     return compiled_file_path if os.path.exists(compiled_file_path) else None
 
+def find_tests_for_model(model_name, directory='models'):
+    """
+    Check if tests are generated for a given model in a dbt project.
+
+    Args:
+        model_name (str): The name of the model to search for tests.
+        directory (str, optional): The root directory to start the search. Defaults to 'models'.
+
+    Returns:
+        tests_found: True if tests are found for the model, False otherwise.
+    """
+    tests_found = False
+    for root, _, files in os.walk(directory):
+        for file in files:
+            if file.endswith('schema.yml'):
+                filepath = os.path.join(root, file)
+                with open(filepath, 'r') as f:
+                    schema_data = yaml.safe_load(f)
+
+                for model in schema_data.get('models', []):
+                    if model['name'] == model_name:
+                        columns = model.get('columns', {})
+                        for column_name, column_data in columns.items():
+                            tests = column_data.get('tests', [])
+                            if tests:
+                                tests_found = True
+                                logger.info(f"Tests found for '{model_name}' model in column '{column_name}': {tests}")
+
+    if not tests_found:
+        logger.info(f"No tests found for the '{model_name}' model.")
+
+    return tests_found
+
 def get_model_name_from_file(file_path: str):
     project_directory = CURRENT_WORKING_DIR
     models_directory = os.path.join(project_directory, "models")
