@@ -19,6 +19,8 @@ setup(
         "duckdb",
         "termcolor",
         "tabulate",
-        "click"
+        "click",
+        "streamlit",
+        "plotly"
     ],
 )
