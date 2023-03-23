@@ -2,6 +2,7 @@ import os
 import yaml
 
 CURRENT_WORKING_DIR = os.getcwd()
+DISABLE_TESTS = False
 
 # Load profiles.yml only once
 profiles_path = os.path.join(CURRENT_WORKING_DIR, "profiles.yml")
