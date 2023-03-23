@@ -1,84 +1,34 @@
 import click
-import os
-import yaml
-from fst import fst_query
+
+from fst.file_utils import get_models_directory
+from fst.query_handler import handle_query, DynamicQueryHandler
+from fst.directory_watcher import watch_directory
+from fst.logger import setup_logger
+from fst.config_defaults import CURRENT_WORKING_DIR
 
 
 @click.group()
 def main():
+    setup_logger()
     pass
 
 
-def get_model_paths():
-    with open("dbt_project.yml", "r") as file:
-        dbt_project = yaml.safe_load(file)
-        model_paths = dbt_project.get("model-paths", [])
-        return [
-            os.path.join(fst_query.CURRENT_WORKING_DIR, path) for path in model_paths
-        ]
-
-
 @main.command()
 @click.option(
-    "--file-path",
+    "--path",
+    "-p",
+    default=CURRENT_WORKING_DIR,
     type=click.Path(
-        exists=True, file_okay=True, dir_okay=False, readable=True, resolve_path=True
+        exists=True, dir_okay=True, readable=True, resolve_path=True
     ),
-    help="Path to the SQL file you want to watch.",
+    help="dbt project root directory. Defaults to current working directory.",
 )
-def start(file_path):
-    model_paths = get_model_paths()
-    if file_path:
-        click.echo(f"Started watching directory: {os.path.dirname(file_path)}")
-        fst_query.watch_directory(
-            os.path.dirname(file_path), fst_query.handle_query, file_path
-        )
-    elif model_paths:
-        for path in model_paths:
-            click.echo(f"Started watching directory: {path}")
-            fst_query.watch_directory(path, fst_query.handle_query, None)
-    else:
-        click.echo("Please provide a file path using the --file-path option.")
+def start(path):
+    project_dir = path
+    models_dir = get_models_directory(project_dir)
 
-
-@main.command()
-def stop():
-    if fst_query.observer:
-        fst_query.observer.stop()
-        fst_query.observer.join()
-        click.echo("Stopped watching the directory.")
-    else:
-        click.echo("No observer is currently running.")
-
-
-@main.command()
-@click.option(
-    "--file-path",
-    type=click.Path(
-        exists=True, file_okay=True, dir_okay=False, readable=True, resolve_path=True
-    ),
-    help="Path to the SQL file you want to watch.",
-)
-def restart(file_path):
-    if fst_query.observer:
-        fst_query.observer.stop()
-        fst_query.observer.join()
-        click.echo("Stopped watching the directory.")
-    else:
-        click.echo("No observer was running. Starting a new one.")
-
-    model_paths = get_model_paths()
-    if file_path:
-        click.echo(f"Started watching directory: {os.path.dirname(file_path)}")
-        fst_query.watch_directory(
-            os.path.dirname(file_path), fst_query.handle_query, file_path
-        )
-    elif model_paths:
-        for path in model_paths:
-            click.echo(f"Started watching directory: {path}")
-            fst_query.watch_directory(path, fst_query.handle_query, None)
-    else:
-        click.echo("Please provide a file path using the --file-path option.")
+    event_handler = DynamicQueryHandler(handle_query, models_dir)
+    watch_directory(event_handler, models_dir)
 
 
 if __name__ == "__main__":
