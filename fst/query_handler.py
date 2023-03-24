@@ -50,9 +50,9 @@ class DynamicQueryHandler(FileSystemEventHandler):
 
 
     
-def generate_and_run_tests(model_name, column_names, active_file):
+def generate_and_run_tests(model_name, column_names, active_file, tests_data):
     test_yaml_path = generate_test_yaml(
-        model_name, column_names, active_file
+        model_name, column_names, active_file, tests_data
     )
     test_yaml_path_warning_message = (
         f"Generated test YAML file: {test_yaml_path}"
@@ -133,14 +133,14 @@ def handle_query(query, file_path):
                     + tabulate(result, headers=column_names, tablefmt="grid")
                 )
                  # Check if tests are generated for the model
-                tests_exist = find_tests_for_model(model_name) 
+                tests_data = find_tests_for_model(model_name) 
 
-                if not tests_exist and not DISABLE_TESTS:
+                if not tests_data and not DISABLE_TESTS:
                     response = input(f"No tests found for the '{model_name}' model. Would you like to generate tests? (yes/no): ")
 
                     if response.lower() == 'yes':
                         logger.info(f"Generating tests for the '{model_name}' model...")
-                        generate_and_run_tests(model_name, column_names, active_file)
+                        generate_and_run_tests(model_name, column_names, active_file, tests_data)
                     else:
                         logger.info(f"Skipping tests generation for the '{model_name}' model.")   
 

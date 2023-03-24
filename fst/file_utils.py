@@ -36,12 +36,13 @@ def find_tests_for_model(model_name, directory='models'):
         directory (str, optional): The root directory to start the search. Defaults to 'models'.
 
     Returns:
-        tests_found: True if tests are found for the model, False otherwise.
+        dict: A dictionary containing information about the tests found, including the model name, column name, file type, and tests.
     """
-    tests_found = False
+    tests_data = {}
+
     for root, _, files in os.walk(directory):
         for file in files:
-            if file.endswith('schema.yml'):
+            if file.endswith(('.schema.yml', '.yml')):
                 filepath = os.path.join(root, file)
                 with open(filepath, 'r') as f:
                     schema_data = yaml.safe_load(f)
@@ -49,16 +50,13 @@ def find_tests_for_model(model_name, directory='models'):
                 for model in schema_data.get('models', []):
                     if model['name'] == model_name:
                         columns = model.get('columns', {})
-                        for column_name, column_data in columns.items():
+                        for column_data in columns:
+                            column_name = column_data['name']
                             tests = column_data.get('tests', [])
                             if tests:
-                                tests_found = True
-                                logger.info(f"Tests found for '{model_name}' model in column '{column_name}': {tests}")
+                                tests_data.append({'file': filepath, 'column': column_name, 'tests': tests})
 
-    if not tests_found:
-        logger.info(f"No tests found for the '{model_name}' model.")
-
-    return tests_found
+    return tests_data
 
 def get_model_name_from_file(file_path: str):
     project_directory = CURRENT_WORKING_DIR
@@ -67,24 +65,68 @@ def get_model_name_from_file(file_path: str):
     model_name, _ = os.path.splitext(relative_file_path)
     return model_name.replace(os.sep, ".")
 
-def generate_test_yaml(model_name, column_names, active_file_path):
-    test_yaml = f"version: 2\n\nmodels:\n  - name: {model_name}\n    columns:"
+import yaml
+import re
+import os
+
+def generate_test_yaml(model_name, column_names, active_file_path, tests_data):
+    yaml_files = {}
 
     for column in column_names:
-        test_yaml += f"\n      - name: {column}\n        description: 'A placeholder description for {column}'"
-
+        tests_to_add = []
         if re.search(r"(_id|_ID)$", column):
-            test_yaml += "\n        tests:\n          - unique\n          - not_null"
+            tests_to_add = ["unique", "not_null"]
 
-    active_file_directory = os.path.dirname(active_file_path)
-    active_file_name, _ = os.path.splitext(os.path.basename(active_file_path))
-    new_yaml_file_name = f"{active_file_name}.yml"
-    new_yaml_file_path = os.path.join(active_file_directory, new_yaml_file_name)
+        # Check if tests for this column already exist
+        existing_tests = [data for data in tests_data if data['column'] == column]
 
-    with open(new_yaml_file_path, "w") as file:
-        file.write(test_yaml)
+        if existing_tests:
+            # Update the existing YAML file with new tests
+            for test_data in existing_tests:
+                yaml_file = test_data['file']
+                if yaml_file not in yaml_files:
+                    with open(yaml_file, 'r') as f:
+                        yaml_files[yaml_file] = yaml.safe_load(f)
 
-    return new_yaml_file_path
+                models = yaml_files[yaml_file].get('models', [])
+                for model in models:
+                    if model['name'] == model_name:
+                        columns = model.get('columns', [])
+                        for existing_column in columns:
+                            if existing_column['name'] == column:
+                                tests = existing_column.get('tests', [])
+                                for test in tests_to_add:
+                                    if test not in tests:
+                                        tests.append(test)
+                                existing_column['tests'] = tests
+        else:
+            # If no tests exist, add the tests to the schema.yml file
+            schema_yml_path = os.path.join(os.path.dirname(active_file_path), "schema.yml")
+            if os.path.exists(schema_yml_path):
+                with open(schema_yml_path, "r") as f:
+                    schema_yml_data = yaml.safe_load(f)
+
+                for model in schema_yml_data.get("models", []):
+                    if model["name"] == model_name:
+                        if "columns" not in model:
+                            model["columns"] = []
+
+                        new_column = {
+                            "name": column,
+                            "description": f"A placeholder description for {column}",
+                            "tests": tests_to_add,
+                        }
+                        model["columns"].append(new_column)
+                        break
+
+                with open(schema_yml_path, "w") as f:
+                    yaml.dump(schema_yml_data, f)
+
+                return schema_yml_path
+
+    # Return the first file path where tests were found
+    return next(iter(yaml_files))
+
 
 def get_model_paths():
     with open("dbt_project.yml", "r") as file:
