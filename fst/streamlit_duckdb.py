@@ -18,7 +18,8 @@ st.title("fst Performance and Productivity")
 # Show the fst_metrics data
 st.write("## Result Preview")
 index_options = [f"{row.timestamp} - {row.modified_sql_file}" for _, row in metrics_df.iterrows()]
-selected_option = st.selectbox("Select a row to display the result preview:", options=index_options, index=0)
+latest_section = len(index_options) - 1
+selected_option = st.selectbox("Select a row to display the result preview:", options=index_options, index=latest_section)
 selected_index = index_options.index(selected_option)
 selected_row = metrics_df.iloc[selected_index]
 result_preview_df = pd.read_json(selected_row["result_preview_json"])
