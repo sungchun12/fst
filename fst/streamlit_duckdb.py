@@ -17,7 +17,12 @@ st.title("fst Performance and Productivity")
 
 # Show the fst_metrics data
 st.write("## Result Preview")
-st.write(metrics_df)
+index_options = [f"{row.timestamp} - {row.modified_sql_file}" for _, row in metrics_df.iterrows()]
+selected_option = st.selectbox("Select a row to display the result preview:", options=index_options, index=0)
+selected_index = index_options.index(selected_option)
+selected_row = metrics_df.iloc[selected_index]
+result_preview_df = pd.read_json(selected_row["result_preview_json"])
+st.write(result_preview_df)
 
 # Calculate average dbt build time and average query time
 average_dbt_build_time = metrics_df["dbt_build_time"].mean()
@@ -31,3 +36,9 @@ st.write(f"Average query time: {average_query_time:.2f} seconds")
 # Visualizations
 st.write("## Visualizations")
 st.bar_chart(metrics_df["dbt_build_time"])
+
+# Display contents of the compiled_sql_file
+st.write("## Compiled SQL File")
+with open(selected_row["compiled_sql_file"], "r") as f:
+    compiled_sql_file_contents = f.read()
+st.code(compiled_sql_file_contents, language="sql")
