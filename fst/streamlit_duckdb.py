@@ -2,37 +2,55 @@ import streamlit as st
 import duckdb
 import pandas as pd
 import plotly.express as px
+import threading
+import queue
+import time
 
 # Connect to DuckDB database
-con = duckdb.connect("jaffle_shop.duckdb")
+con = duckdb.connect('jaffle_shop.duckdb')
 
-# Example DuckDB table creation and data insertion
-con.execute(
-    """
-CREATE TABLE IF NOT EXISTS sample_data (
-    date DATE,
-    value FLOAT
-);
-"""
-)
 
-con.execute(
-    """
-INSERT INTO sample_data (date, value) VALUES
-    ('2023-01-01', 10),
-    ('2023-01-02', 15),
-    ('2023-01-03', 20),
-    ('2023-01-04', 18),
-    ('2023-01-05', 22);
-"""
-)
+def get_data():
+    query = "SELECT * FROM new_file;"
+    return con.execute(query).fetchdf()
 
-# Query data from DuckDB
-query = "SELECT * FROM sample_data;"
-df = con.execute(query).fetchdf()
+def watch_for_new_data(q):
+    last_known_row_count = 0
 
-# Create a line chart using Plotly
-fig = px.line(df, x="date", y="value", title="Beautiful Line Chart")
+    while True:
+        result = con.execute("SELECT COUNT(*) FROM new_file;").fetchone()
 
-# Display the line chart in Streamlit
-st.plotly_chart(fig)
+        if result is None:
+            print("Error: fetchone() returned None")
+            time.sleep(1)
+            continue
+
+        current_row_count = result[0]
+
+        if current_row_count > last_known_row_count:
+            q.put("New data detected")
+            last_known_row_count = current_row_count
+
+        time.sleep(1)
+
+
+    # Query data from DuckDB
+    df = get_data()
+
+refresh_interval = 5  # Refresh every 5 seconds
+
+# Streamlit app
+st.set_page_config(layout="wide")
+
+while True:
+    # Query data from DuckDB
+    df = get_data()
+
+    # Create a line chart using Plotly
+    fig = px.line(df, x='most_recent_order', y='customer_lifetime_value', title='Beautiful Line Chart')
+
+    # Display the line chart in Streamlit
+    st.plotly_chart(fig)
+
+    time.sleep(refresh_interval)
+    st.experimental_rerun()
