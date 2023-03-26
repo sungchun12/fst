@@ -51,7 +51,28 @@ st.write(
 
 # Visualizations
 st.write("## Visualizations")
-st.bar_chart(filtered_metrics_df["dbt_build_time"])
+chart_data = filtered_metrics_df[["dbt_build_time", "query_time"]]
+st.line_chart(chart_data)
+
+# Calculate the number of modifications per file and average performance stats related to each file
+modifications_per_file = (
+    metrics_df.groupby("modified_sql_file").size().reset_index(name="num_modifications")
+)
+average_performance_stats = (
+    metrics_df.groupby("modified_sql_file")["dbt_build_time", "query_time"]
+    .mean()
+    .reset_index()
+)
+average_performance_stats = average_performance_stats.rename(
+    columns={"dbt_build_time": "avg_dbt_build_time", "query_time": "avg_query_time"}
+)
+file_modifications_and_performance = pd.merge(
+    modifications_per_file, average_performance_stats, on="modified_sql_file"
+)
+
+# Display the number of modifications per file and average performance stats in a simple dataframe
+st.write("## File Modifications and Average Performance Stats")
+st.write(file_modifications_and_performance)
 
 # Display contents of the compiled_sql_file
 st.write("## Compiled SQL File")
