@@ -16,11 +16,7 @@ def fetch_metrics_data():
 metrics_df = fetch_metrics_data()
 
 # Streamlit app
-st.title("fst Performance and Productivity")
-
-# Show the fst_metrics data
-st.write("### Result Preview")
-
+st.title("fst Copilot")
 # Sort metrics_df by timestamp in descending order
 sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=False)
 
@@ -37,6 +33,7 @@ selected_index = index_options.index(selected_option)
 selected_row = sorted_metrics_df.iloc[selected_index]
 result_preview_df = pd.read_json(selected_row["result_preview_json"])
 st.write(result_preview_df)
+st.code(f"{selected_row['modified_sql_file']}", language="text")
 
 # Filter metrics_df based on the selected option
 filtered_metrics_df = metrics_df.loc[
@@ -48,13 +45,8 @@ average_dbt_build_time = filtered_metrics_df["dbt_build_time"].mean()
 average_query_time = filtered_metrics_df["query_time"].mean()
 
 # Performance Metrics
-st.write("### Performance Metrics")
-st.write(
-    f"Average `dbt build` time for the selected option: {average_dbt_build_time:.2f} seconds"
-)
-st.write(
-    f"Average query time for the selected option: {average_query_time:.2f} seconds"
-)
+st.write(f"Average `dbt build` time: **{average_dbt_build_time:.2f} seconds**")
+st.write(f"Average query time: **{average_query_time:.2f} seconds**")
 
 # Calculate rolling average
 filtered_metrics_df.loc[:, "rolling_average"] = (
@@ -91,11 +83,15 @@ fig.add_bar(
 st.write(fig)
 
 # Calculate the number of modifications per file and average performance stats related to each file
+# Create a new column with the base file name
+metrics_df["base_modified_sql_file"] = metrics_df["modified_sql_file"].apply(os.path.basename)
+
+# Group by the base_modified_sql_file column
 modifications_per_file = (
-    metrics_df.groupby("modified_sql_file").size().reset_index(name="num_modifications")
+    metrics_df.groupby("base_modified_sql_file").size().reset_index(name="num_modifications")
 )
 average_performance_stats = (
-    metrics_df.groupby("modified_sql_file")[["dbt_build_time", "query_time"]]
+    metrics_df.groupby("base_modified_sql_file")[["dbt_build_time", "query_time"]]
     .mean()
     .reset_index()
 )
