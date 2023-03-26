@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import duckdb
 import plotly.express as px
+import os
 
 # Function to fetch metrics data from DuckDB
 def fetch_metrics_data():
@@ -24,7 +25,7 @@ st.write("### Result Preview")
 sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=False)
 
 index_options = [
-    f"{row.timestamp} - {row.modified_sql_file}"
+    f"{row.timestamp} - {os.path.basename(row.modified_sql_file)}"
     for _, row in sorted_metrics_df.iterrows()
 ]
 selected_option = st.selectbox(
