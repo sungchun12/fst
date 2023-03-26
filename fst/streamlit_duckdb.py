@@ -19,16 +19,20 @@ st.title("fst Performance and Productivity")
 
 # Show the fst_metrics data
 st.write("### Result Preview")
+
+# Sort metrics_df by timestamp in descending order
+sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=False)
+
 index_options = [
-    f"{row.timestamp} - {row.modified_sql_file}" for _, row in metrics_df.iterrows()
+    f"{row.timestamp} - {row.modified_sql_file}" for _, row in sorted_metrics_df.iterrows()
 ]
 selected_option = st.selectbox(
     "Select a row to display the result preview:",
     options=index_options,
-    index=len(index_options) - 1,
+    index=0,  # Set the default index to 0 (the first option) as the options are sorted from newest to oldest
 )
 selected_index = index_options.index(selected_option)
-selected_row = metrics_df.iloc[selected_index]
+selected_row = sorted_metrics_df.iloc[selected_index]
 result_preview_df = pd.read_json(selected_row["result_preview_json"])
 st.write(result_preview_df)
 
