@@ -68,11 +68,17 @@ fig = px.line(
     labels={"index": "# of Modifications", "rolling_average": "Time in Seconds"},
 )
 
+# Add a custom legend for the rolling average line
+fig.update_traces(
+    line=dict(color="orange", width=2), name="Rolling Average", showlegend=True
+)
+
+
 # Add a bar chart for dbt build times
 fig.add_bar(
     x=filtered_metrics_df["index"],
     y=filtered_metrics_df["dbt_build_time"],
-    name="dbt build Time",
+    name="Unique builds",
 )
 
 # Plot the combined chart
@@ -102,7 +108,7 @@ st.write(file_modifications_and_performance)
 query_params = st.experimental_get_query_params()
 show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 
-if st.button("Toggle code snippet for selected option"):
+if st.button("Toggle compiled code snippet for selected option"):
     show_code = not show_code
     st.experimental_set_query_params(show_code=show_code)
 
