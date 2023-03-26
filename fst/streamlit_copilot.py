@@ -5,9 +5,9 @@ import plotly.express as px
 
 # Function to fetch metrics data from DuckDB
 def fetch_metrics_data():
-    duckdb_conn = duckdb.connect("fst_metrics.duckdb")
-    metrics_df = duckdb_conn.execute("SELECT * FROM metrics").fetchdf()
-    duckdb_conn.close()
+    with duckdb.connect("fst_metrics.duckdb") as duckdb_conn:
+        metrics_df = duckdb_conn.execute("SELECT * FROM metrics").fetchdf()
+
     return metrics_df
 
 
@@ -24,7 +24,8 @@ st.write("### Result Preview")
 sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=False)
 
 index_options = [
-    f"{row.timestamp} - {row.modified_sql_file}" for _, row in sorted_metrics_df.iterrows()
+    f"{row.timestamp} - {row.modified_sql_file}"
+    for _, row in sorted_metrics_df.iterrows()
 ]
 selected_option = st.selectbox(
     "Select a row to display the result preview:",
