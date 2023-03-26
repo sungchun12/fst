@@ -72,25 +72,19 @@ fig.update_traces(
 )
 
 
-# Define a function to assign colors based on the dbt_build_status value
-def assign_colors(status):
-    if status == "success":
-        return "#AEC6CF"
-    elif status == "failure":
-        return "#FF6961"
-    else:
-        return "#CFCFCF"
-
-# Create a new column 'color' in filtered_metrics_df, containing the colors for each bar
-filtered_metrics_df["color"] = filtered_metrics_df["dbt_build_status"].apply(assign_colors)
-
 # Add a bar chart for dbt build times, with colors based on the dbt_build_status
-fig.add_bar(
-    x=filtered_metrics_df["index"],
-    y=filtered_metrics_df["dbt_build_time"],
-    marker=dict(color=filtered_metrics_df["color"]),
-    name="Unique builds",
-)
+# Define the color mapping
+status_colors = {"success": "#AEC6CF", "failure": "#FF6961"}
+
+# Add separate bars for success and failure unique builds
+for status, color in status_colors.items():
+    mask = filtered_metrics_df["dbt_build_status"] == status
+    fig.add_bar(
+        x=filtered_metrics_df.loc[mask, "index"],
+        y=filtered_metrics_df.loc[mask, "dbt_build_time"],
+        marker=dict(color=color),
+        name=status.capitalize(),
+    )
 
 
 # Plot the combined chart
@@ -98,11 +92,15 @@ st.write(fig)
 
 # Calculate the number of modifications per file and average performance stats related to each file
 # Create a new column with the base file name
-metrics_df["base_modified_sql_file"] = metrics_df["modified_sql_file"].apply(os.path.basename)
+metrics_df["base_modified_sql_file"] = metrics_df["modified_sql_file"].apply(
+    os.path.basename
+)
 
 # Group by the base_modified_sql_file column
 modifications_per_file = (
-    metrics_df.groupby("base_modified_sql_file").size().reset_index(name="num_modifications")
+    metrics_df.groupby("base_modified_sql_file")
+    .size()
+    .reset_index(name="num_modifications")
 )
 average_performance_stats = (
     metrics_df.groupby("base_modified_sql_file")[["dbt_build_time", "query_time"]]
