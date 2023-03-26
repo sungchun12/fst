@@ -72,12 +72,26 @@ fig.update_traces(
 )
 
 
-# Add a bar chart for dbt build times
+# Define a function to assign colors based on the dbt_build_status value
+def assign_colors(status):
+    if status == "success":
+        return "#AEC6CF"
+    elif status == "failure":
+        return "#FF6961"
+    else:
+        return "#CFCFCF"
+
+# Create a new column 'color' in filtered_metrics_df, containing the colors for each bar
+filtered_metrics_df["color"] = filtered_metrics_df["dbt_build_status"].apply(assign_colors)
+
+# Add a bar chart for dbt build times, with colors based on the dbt_build_status
 fig.add_bar(
     x=filtered_metrics_df["index"],
     y=filtered_metrics_df["dbt_build_time"],
+    marker=dict(color=filtered_metrics_df["color"]),
     name="Unique builds",
 )
+
 
 # Plot the combined chart
 st.write(fig)
