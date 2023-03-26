@@ -112,7 +112,7 @@ st.write(file_modifications_and_performance)
 query_params = st.experimental_get_query_params()
 show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 
-if st.button("Toggle compiled code snippet for selected option"):
+if st.button("Toggle **latest** compiled code snippet for selected option"):
     show_code = not show_code
     st.experimental_set_query_params(show_code=show_code)
 
