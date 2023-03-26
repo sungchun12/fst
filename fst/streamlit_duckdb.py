@@ -40,9 +40,13 @@ st.write(f"Average query time for the selected option: {average_query_time:.2f} 
 st.write("## Visualizations")
 st.bar_chart(filtered_metrics_df["dbt_build_time"])
 
-
 # Display contents of the compiled_sql_file
 st.write("## Compiled SQL File")
-with open(selected_row["compiled_sql_file"], "r") as f:
-    compiled_sql_file_contents = f.read()
-st.code(compiled_sql_file_contents, language="sql")
+
+# Toggle button for showing/hiding the code snippet
+show_code = st.checkbox("Show/hide code snippet", value=False)
+
+if show_code:
+    with open(selected_row["compiled_sql_file"], "r") as f:
+        compiled_sql_file_contents = f.read()
+    st.code(compiled_sql_file_contents, language="sql")
