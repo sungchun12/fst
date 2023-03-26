@@ -45,8 +45,9 @@ average_dbt_build_time = filtered_metrics_df["dbt_build_time"].mean()
 average_query_time = filtered_metrics_df["query_time"].mean()
 
 # Performance Metrics
-st.write(f"Average `dbt build` time: **{average_dbt_build_time:.2f} seconds**")
-st.write(f"Average query time: **{average_query_time:.2f} seconds**")
+st.write(
+    f"Average `dbt build` time: **{average_dbt_build_time:.2f} seconds** | Average query time: **{average_query_time:.2f} seconds**"
+)
 
 # Calculate rolling average
 filtered_metrics_df.loc[:, "rolling_average"] = (
