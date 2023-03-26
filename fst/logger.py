@@ -1,7 +1,18 @@
 import logging
+import sys
 from colorlog import ColoredFormatter
+from multiprocessing import Queue, current_process
+from queue import Empty
 
-def setup_logger():
+class QueueHandler(logging.Handler):
+    def __init__(self, queue):
+        super().__init__()
+        self.queue = queue
+
+    def emit(self, record):
+        self.queue.put(record)
+
+def setup_logger(queue=None):
     log_format = "%(asctime)s - %(levelname)s - %(log_color)s%(message)s%(reset)s"
 
     formatter = ColoredFormatter(
@@ -20,7 +31,12 @@ def setup_logger():
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
 
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
+    if queue is not None:
+        handler = QueueHandler(queue)
+    else:
+        handler = logging.StreamHandler(sys.stdout)
 
-    logger.addHandler(stream_handler)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+
+    return logger

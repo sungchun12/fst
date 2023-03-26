@@ -2,6 +2,7 @@ import click
 import os
 import subprocess
 import multiprocessing
+import logging
 
 from fst.file_utils import get_models_directory
 from fst.query_handler import handle_query, DynamicQueryHandler
@@ -25,12 +26,26 @@ def start_streamlit():
     subprocess.run(["streamlit", "run", streamlit_app_path])
 
 
-def start_directory_watcher(path):
+def start_directory_watcher(path, log_queue):
+    setup_logger(log_queue)
     project_dir = path
     models_dir = get_models_directory(project_dir)
 
     event_handler = DynamicQueryHandler(handle_query, models_dir)
     watch_directory(event_handler, models_dir)
+
+
+def listener_process(queue):
+    setup_logger()
+    while True:
+        try:
+            record = queue.get()
+            if record is None:
+                break
+            logger = logging.getLogger(record.name)
+            logger.handle(record)
+        except Empty:
+            pass
 
 
 @main.command()
@@ -42,16 +57,25 @@ def start_directory_watcher(path):
     help="dbt project root directory. Defaults to current working directory.",
 )
 def start(path):
+    log_queue = multiprocessing.Queue()
+
     # Start the directory watcher and Streamlit app in separate processes
-    streamlit_process = multiprocessing.Process(target=start_streamlit)
     dir_watcher_process = multiprocessing.Process(
-        target=start_directory_watcher, args=(path,)
+        target=start_directory_watcher, args=(path, log_queue)
     )
+    streamlit_process = multiprocessing.Process(target=start_streamlit)
+
+    listener = multiprocessing.Process(target=listener_process, args=(log_queue,))
+
+    listener.start()
     dir_watcher_process.start()
     streamlit_process.start()
 
     dir_watcher_process.join()
     streamlit_process.join()
+
+    log_queue.put(None)
+    listener.join()
 
 
 if __name__ == "__main__":
