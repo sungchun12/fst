@@ -22,6 +22,5 @@ setup(
         "click",
         "streamlit",
         "plotly",
-        "altair",
     ],
 )

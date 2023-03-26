@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import duckdb
+import plotly.express as px
 
 # Function to fetch metrics data from DuckDB
 def fetch_metrics_data():
@@ -8,7 +9,6 @@ def fetch_metrics_data():
     metrics_df = duckdb_conn.execute("SELECT * FROM metrics").fetchdf()
     duckdb_conn.close()
     return metrics_df
-
 
 # Fetch the metrics data
 metrics_df = fetch_metrics_data()
@@ -50,22 +50,19 @@ st.write(
 )
 
 # Calculate rolling average
-rolling_average = (
-    filtered_metrics_df["dbt_build_time"]
-    .rolling(window=len(filtered_metrics_df), min_periods=1)
-    .mean()
-)
+filtered_metrics_df["rolling_average"] = filtered_metrics_df["dbt_build_time"].rolling(window=len(filtered_metrics_df), min_periods=1).mean()
 
-# Create a bar chart for dbt build times and a line chart for the rolling average
-dbt_build_times_chart = pd.DataFrame(
-    {"dbt_build_time": filtered_metrics_df["dbt_build_time"]}
-)
-rolling_average_chart = pd.DataFrame({"rolling_average": rolling_average})
-combined_chart = pd.concat([dbt_build_times_chart, rolling_average_chart], axis=1)
+# Reset the index of the filtered_metrics_df
+filtered_metrics_df = filtered_metrics_df.reset_index()
+
+# Create a line chart for the rolling average
+fig = px.line(filtered_metrics_df, x='index', y='rolling_average', labels={'index': 'Index', 'rolling_average': 'Rolling Average'})
+
+# Add a bar chart for dbt build times
+fig.add_bar(x=filtered_metrics_df['index'], y=filtered_metrics_df['dbt_build_time'], name='DBT Build Time')
 
 # Plot the combined chart
-st.bar_chart(combined_chart)
-
+st.write(fig)
 # Calculate the number of modifications per file and average performance stats related to each file
 modifications_per_file = (
     metrics_df.groupby("modified_sql_file").size().reset_index(name="num_modifications")
