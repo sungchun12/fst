@@ -71,7 +71,7 @@ def handle_query(query, file_path):
                 f"Running `dbt build` with the modified SQL file ({active_file})..."
             )
             result = subprocess.run(
-                ["dbt", "build", "--select", model_name],
+                ["dbt", "build", "--select", model_name, "--store-failures"],
                 capture_output=True,
                 text=True,
             )
@@ -116,7 +116,7 @@ def handle_query(query, file_path):
                             "Running `dbt test` with the generated test YAML file..."
                         )
                         result_rerun = subprocess.run(
-                            ["dbt", "test", "--select", model_name],
+                            ["dbt", "test", "--select", model_name, "--store-failures"],
                             capture_output=True,
                             text=True,
                         )
