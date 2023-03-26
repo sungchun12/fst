@@ -49,10 +49,22 @@ st.write(
     f"Average query time for the selected option: {average_query_time:.2f} seconds"
 )
 
-# Visualizations
-st.write("## Visualizations")
-chart_data = filtered_metrics_df[["dbt_build_time", "query_time"]]
-st.line_chart(chart_data)
+# Calculate rolling average
+rolling_average = (
+    filtered_metrics_df["dbt_build_time"]
+    .rolling(window=len(filtered_metrics_df), min_periods=1)
+    .mean()
+)
+
+# Create a bar chart for dbt build times and a line chart for the rolling average
+dbt_build_times_chart = pd.DataFrame(
+    {"dbt_build_time": filtered_metrics_df["dbt_build_time"]}
+)
+rolling_average_chart = pd.DataFrame({"rolling_average": rolling_average})
+combined_chart = pd.concat([dbt_build_times_chart, rolling_average_chart], axis=1)
+
+# Plot the combined chart
+st.bar_chart(combined_chart)
 
 # Calculate the number of modifications per file and average performance stats related to each file
 modifications_per_file = (
@@ -76,7 +88,6 @@ st.write(file_modifications_and_performance)
 
 # Display contents of the compiled_sql_file
 st.write("## Compiled SQL File")
-
 # Aesthetically pleasing toggle button
 query_params = st.experimental_get_query_params()
 show_code = query_params.get("show_code", ["False"])[0].lower() == "true"

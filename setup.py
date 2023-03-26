@@ -21,6 +21,7 @@ setup(
         "tabulate",
         "click",
         "streamlit",
-        "plotly"
+        "plotly",
+        "altair",
     ],
 )
