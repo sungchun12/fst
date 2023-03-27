@@ -4,6 +4,7 @@ import duckdb
 import plotly.express as px
 import os
 from functools import lru_cache
+import numpy as np
 import streamlit_ace
 from fst.db_utils import get_duckdb_file_path
 
@@ -36,6 +37,8 @@ def run_query(query):
 
 # Add basic SQL syntax highlighting to the text area
 sql_placeholder = """-- Write your SQL query here for ad hoc investigations
+-- pink background indicates duplicate values
+-- yellow background indicates null values
 SELECT *
 FROM table_name
 LIMIT 10;
@@ -44,17 +47,25 @@ LIMIT 10;
 query = streamlit_ace.st_ace(
     value=sql_placeholder,
     theme="tomorrow",
-    height=100,
+    height=150,
     language="sql",  # Set language to SQL for syntax highlighting
     key="sql_input",
     auto_update=True,  # Update results automatically
 )
 
+def highlight_duplicates(data):
+    def column_style(column):
+        is_duplicate = column.duplicated(keep=False)
+        return ['background-color: pink' if cell else '' for cell in is_duplicate]
+
+    return data.style.apply(column_style)
+
+
 if query.strip():
     try:
         # Cache the query results
         df = run_query(query)
-        st.dataframe(df)
+        st.dataframe(highlight_duplicates(df))
     except Exception as e:
         st.error(f"Error running query: {e}")
 else:
