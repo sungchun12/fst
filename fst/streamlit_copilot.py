@@ -53,19 +53,34 @@ query = streamlit_ace.st_ace(
     auto_update=True,  # Update results automatically
 )
 
-def highlight_duplicates(data):
-    def column_style(column):
-        is_duplicate = column.duplicated(keep=False)
-        return ['background-color: pink' if cell else '' for cell in is_duplicate]
+class DataFrameHighlighter:
+    def __init__(self, dataframe):
+        self.dataframe = dataframe
 
-    return data.style.apply(column_style)
+    def highlight(self):
+        def column_style(column):
+            is_duplicate = column.duplicated(keep=False)
+            is_null = column.isna()
+            styles = []
+
+            for dup, null in zip(is_duplicate, is_null):
+                if null:
+                    styles.append('background-color: lightyellow')
+                elif dup:
+                    styles.append('background-color: lightpink')
+                else:
+                    styles.append('')
+            return styles
+
+        return self.dataframe.style.apply(column_style)
 
 
 if query.strip():
     try:
         # Cache the query results
         df = run_query(query)
-        st.dataframe(highlight_duplicates(df))
+        highlighted_df = DataFrameHighlighter(df).highlight()
+        st.dataframe(highlighted_df)
     except Exception as e:
         st.error(f"Error running query: {e}")
 else:
