@@ -6,6 +6,7 @@ import os
 from functools import lru_cache
 import streamlit_ace
 
+
 # Function to fetch metrics data from DuckDB
 def fetch_metrics_data():
     with duckdb.connect("fst_metrics.duckdb") as duckdb_conn:
@@ -20,39 +21,54 @@ metrics_df = fetch_metrics_data()
 # Streamlit app
 st.title("fst Copilot")
 
+
 @lru_cache(maxsize=1)
 def get_duckdb_conn():
-    return duckdb.connect('jaffle_shop.duckdb')
+    return duckdb.connect("jaffle_shop.duckdb")
+
 
 def run_query(query):
     conn = get_duckdb_conn()
     result = conn.execute(query).fetchdf()
     return result
 
+
 # Add basic SQL syntax highlighting to the text area
-sql_placeholder = '''-- Write your SQL query here
+sql_placeholder = """-- Write your SQL query here
 SELECT *
 FROM table_name
 LIMIT 10;
-'''
+"""
 
-query = streamlit_ace.st_ace(
-    value=sql_placeholder,
-    height=200,
-    language="sql",  # Set language to SQL for syntax highlighting
-    key='sql_input'
-)
 
-if st.button("Run Query"):
+def on_query_change(query):
     if query.strip():
         try:
-            # Cache the query results
             df = run_query(query)
             st.dataframe(df)
         except Exception as e:
             st.error(f"Error running query: {e}")
     else:
         st.error("Query is empty.")
+
+
+query = streamlit_ace.st_ace(
+    value=sql_placeholder,
+    height=200,
+    language="sql",  # Set language to SQL for syntax highlighting
+    key="sql_input",
+    auto_update=True,  # Update results automatically
+)
+
+if query.strip():
+    try:
+        # Cache the query results
+        df = run_query(query)
+        st.dataframe(df)
+    except Exception as e:
+        st.error(f"Error running query: {e}")
+else:
+    st.error("Query is empty.")
 
 # Sort metrics_df by timestamp in descending order
 sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=False)
