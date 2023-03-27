@@ -29,7 +29,8 @@ class DynamicQueryHandler(FileSystemEventHandler):
 
     def on_modified(self, event):
         if event.src_path.endswith(".sql"):
-            if os.path.dirname(event.src_path) == self.models_dir:
+            # Check if the modified file is in any subdirectory under models_dir
+            if os.path.commonpath([self.models_dir, event.src_path]) == self.models_dir:
                 self.debounce()
                 self.handle_query_for_file(event.src_path)
 
@@ -49,6 +50,7 @@ class DynamicQueryHandler(FileSystemEventHandler):
             query = file.read()
         if query is not None and query.strip():
             handle_query(query, file_path)
+
 
 
 class DateEncoder(json.JSONEncoder):
