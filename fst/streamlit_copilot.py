@@ -39,9 +39,7 @@ def run_query(query):
 sql_placeholder = """-- Write your SQL query here for ad hoc investigations
 -- pink background indicates duplicate values
 -- yellow background indicates null values
-SELECT *
-FROM table_name
-LIMIT 10;
+select 1 as id
 """
 
 query = streamlit_ace.st_ace(
@@ -72,7 +70,7 @@ class DataFrameHighlighter:
                     styles.append('')
             return styles
 
-        return self.dataframe.style.apply(column_style)
+        return self.dataframe.style.apply(column_style, axis=0)
 
 
 if query.strip():
