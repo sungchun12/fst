@@ -17,6 +17,29 @@ metrics_df = fetch_metrics_data()
 
 # Streamlit app
 st.title("fst Copilot")
+
+@st.cache_resource
+def get_duckdb_conn():
+    return duckdb.connect('jaffle_shop.duckdb')
+
+def run_query(query):
+    with get_duckdb_conn() as conn:
+        result = conn.execute(query).fetchdf()
+    return result
+
+query = st.text_area("Enter your SQL query here:")
+
+if st.button("Run Query"):
+    if query.strip():
+        try:
+            # Cache the query results
+            df = run_query(query)
+            st.dataframe(df)
+        except Exception as e:
+            st.error(f"Error running query: {e}")
+    else:
+        st.error("Query is empty.")
+
 # Sort metrics_df by timestamp in descending order
 sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=False)
 
