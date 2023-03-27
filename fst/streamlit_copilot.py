@@ -29,8 +29,8 @@ def get_duckdb_conn():
 
 @st.cache_data
 def run_query(query):
-    conn = get_duckdb_conn()
-    result = conn.execute(query).fetchdf()
+    with get_duckdb_conn() as conn:
+        result = conn.execute(query).fetchdf()
     return result
 
 
