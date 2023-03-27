@@ -55,7 +55,7 @@ def on_query_change(query):
 
 query = streamlit_ace.st_ace(
     value=sql_placeholder,
-    theme="chrome",
+    theme="tomorrow",
     height=100,
     language="sql",  # Set language to SQL for syntax highlighting
     key="sql_input",
