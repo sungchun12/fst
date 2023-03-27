@@ -5,6 +5,7 @@ import plotly.express as px
 import os
 from functools import lru_cache
 import streamlit_ace
+from fst.db_utils import get_duckdb_file_path
 
 
 # Function to fetch metrics data from DuckDB
@@ -24,7 +25,7 @@ st.title("fst Copilot")
 
 @lru_cache(maxsize=1)
 def get_duckdb_conn():
-    return duckdb.connect("jaffle_shop.duckdb")
+    return duckdb.connect(get_duckdb_file_path())
 
 @st.cache_data
 def run_query(query):
