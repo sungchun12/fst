@@ -35,7 +35,7 @@ def run_query(query):
 
 
 # Add basic SQL syntax highlighting to the text area
-sql_placeholder = """-- Write your SQL query here
+sql_placeholder = """-- Write your SQL query here for ad hoc investigations
 SELECT *
 FROM table_name
 LIMIT 10;
@@ -55,7 +55,8 @@ def on_query_change(query):
 
 query = streamlit_ace.st_ace(
     value=sql_placeholder,
-    height=200,
+    theme="chrome",
+    height=100,
     language="sql",  # Set language to SQL for syntax highlighting
     key="sql_input",
     auto_update=True,  # Update results automatically
