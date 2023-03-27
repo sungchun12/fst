@@ -28,6 +28,7 @@ st.title("fst Copilot")
 def get_duckdb_conn():
     return duckdb.connect(get_duckdb_file_path())
 
+
 @st.cache_data
 def run_query(query):
     with get_duckdb_conn() as conn:
@@ -35,7 +36,6 @@ def run_query(query):
     return result
 
 
-# Add basic SQL syntax highlighting to the text area
 sql_placeholder = """-- Write your SQL query here for ad hoc investigations
 -- pink background indicates duplicate values
 -- yellow background indicates null values
@@ -46,10 +46,11 @@ query = streamlit_ace.st_ace(
     value=sql_placeholder,
     theme="tomorrow",
     height=150,
-    language="sql",  # Set language to SQL for syntax highlighting
+    language="sql",
     key="sql_input",
-    auto_update=True,  # Update results automatically
+    auto_update=True,
 )
+
 
 class DataFrameHighlighter:
     def __init__(self, dataframe):
@@ -63,11 +64,11 @@ class DataFrameHighlighter:
 
             for dup, null in zip(is_duplicate, is_null):
                 if null:
-                    styles.append('background-color: lightyellow')
+                    styles.append("background-color: lightyellow")
                 elif dup:
-                    styles.append('background-color: lightpink')
+                    styles.append("background-color: lightpink")
                 else:
-                    styles.append('')
+                    styles.append("")
             return styles
 
         return self.dataframe.style.apply(column_style, axis=0)
@@ -75,7 +76,6 @@ class DataFrameHighlighter:
 
 if query.strip():
     try:
-        # Cache the query results
         df = run_query(query)
         highlighted_df = DataFrameHighlighter(df).highlight()
         st.dataframe(highlighted_df)
@@ -84,17 +84,16 @@ if query.strip():
 else:
     st.error("Query is empty.")
 
-# Sort metrics_df by timestamp in descending order
 sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=False)
 
 index_options = [
     f"{row.timestamp} - {os.path.basename(row.modified_sql_file)}"
-    for _, row in sorted_metrics_df.iterrows()
+    for row in sorted_metrics_df.itertuples()
 ]
 selected_option = st.selectbox(
     "Select a row to display the result preview:",
     options=index_options,
-    index=0,  # Set the default index to 0 (the first option) as the options are sorted from newest to oldest
+    index=0,
 )
 selected_index = index_options.index(selected_option)
 selected_row = sorted_metrics_df.iloc[selected_index]
@@ -102,31 +101,29 @@ result_preview_df = pd.read_json(selected_row["result_preview_json"])
 st.write(result_preview_df)
 st.code(f"{selected_row['modified_sql_file']}", language="text")
 
-# Filter metrics_df based on the selected option
 filtered_metrics_df = metrics_df.loc[
     metrics_df["modified_sql_file"] == selected_row["modified_sql_file"]
-].copy()  # Create a copy of the DataFrame to avoid SettingWithCopyWarning
+].copy()
 
-# Calculate average dbt build time and average query time for the selected option
 average_dbt_build_time = filtered_metrics_df["dbt_build_time"].mean()
 average_query_time = filtered_metrics_df["query_time"].mean()
 
-# Performance Metrics
 st.write(
     f"Average `dbt build` time: **{average_dbt_build_time:.2f} seconds** | Average query time: **{average_query_time:.2f} seconds**"
 )
 
-# Calculate rolling average
-filtered_metrics_df.loc[:, "rolling_average"] = (
-    filtered_metrics_df["dbt_build_time"]
-    .rolling(window=len(filtered_metrics_df), min_periods=1)
-    .mean()
+
+@st.cache_data
+def calculate_rolling_average(df, column):
+    return df[column].rolling(window=len(df), min_periods=1).mean()
+
+
+filtered_metrics_df.loc[:, "rolling_average"] = calculate_rolling_average(
+    filtered_metrics_df, "dbt_build_time"
 )
 
-# Reset the index of the filtered_metrics_df
 filtered_metrics_df = filtered_metrics_df.reset_index()
 
-# Create a line chart for the rolling average
 fig = px.line(
     filtered_metrics_df,
     x="index",
@@ -134,17 +131,12 @@ fig = px.line(
     labels={"index": "# of Modifications", "rolling_average": "Time in Seconds"},
 )
 
-# Add a custom legend for the rolling average line
 fig.update_traces(
     line=dict(color="orange", width=2), name="Rolling Average", showlegend=True
 )
 
-
-# Add a bar chart for dbt build times, with colors based on the dbt_build_status
-# Define the color mapping
 status_colors = {"success": "#AEC6CF", "failure": "#FF6961"}
 
-# Add separate bars for success and failure unique builds
 for status, color in status_colors.items():
     mask = filtered_metrics_df["dbt_build_status"] == status
     fig.add_bar(
@@ -154,17 +146,12 @@ for status, color in status_colors.items():
         name=status.capitalize(),
     )
 
-
-# Plot the combined chart
 st.write(fig)
 
-# Calculate the number of modifications per file and average performance stats related to each file
-# Create a new column with the base file name
 metrics_df["base_modified_sql_file"] = metrics_df["modified_sql_file"].apply(
     os.path.basename
 )
 
-# Group by the base_modified_sql_file column
 modifications_per_file = (
     metrics_df.groupby("base_modified_sql_file")
     .size()
@@ -181,12 +168,10 @@ average_performance_stats = average_performance_stats.rename(
 file_modifications_and_performance = pd.merge(
     modifications_per_file, average_performance_stats
 )
-# Display the number of modifications per file and average performance stats in a simple dataframe
+
 st.write("### File Modifications and Average Performance Stats")
 st.write(file_modifications_and_performance)
 
-# Display contents of the compiled_sql_file
-# Aesthetically pleasing toggle button
 query_params = st.experimental_get_query_params()
 show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 
