@@ -3,6 +3,7 @@ import pandas as pd
 import duckdb
 import plotly.express as px
 import os
+from functools import lru_cache
 
 # Function to fetch metrics data from DuckDB
 def fetch_metrics_data():
@@ -18,16 +19,23 @@ metrics_df = fetch_metrics_data()
 # Streamlit app
 st.title("fst Copilot")
 
-@st.cache_resource
+@lru_cache(maxsize=1)
 def get_duckdb_conn():
     return duckdb.connect('jaffle_shop.duckdb')
 
 def run_query(query):
-    with get_duckdb_conn() as conn:
-        result = conn.execute(query).fetchdf()
+    conn = get_duckdb_conn()
+    result = conn.execute(query).fetchdf()
     return result
 
-query = st.text_area("Enter your SQL query here:")
+# Add basic SQL syntax highlighting to the text area
+sql_placeholder = '''-- Write your SQL query here
+SELECT *
+FROM table_name
+LIMIT 10;
+'''
+
+query = st.text_area("Enter your SQL query here for ad hoc investigations:", value=sql_placeholder, height=100, key='sql_input')
 
 if st.button("Run Query"):
     if query.strip():
