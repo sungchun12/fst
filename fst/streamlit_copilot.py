@@ -4,6 +4,7 @@ import duckdb
 import plotly.express as px
 import os
 from functools import lru_cache
+import streamlit_ace
 
 # Function to fetch metrics data from DuckDB
 def fetch_metrics_data():
@@ -35,7 +36,12 @@ FROM table_name
 LIMIT 10;
 '''
 
-query = st.text_area("Enter your SQL query here for ad hoc investigations:", value=sql_placeholder, height=100, key='sql_input')
+query = streamlit_ace.st_ace(
+    value=sql_placeholder,
+    height=200,
+    language="sql",  # Set language to SQL for syntax highlighting
+    key='sql_input'
+)
 
 if st.button("Run Query"):
     if query.strip():
