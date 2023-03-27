@@ -26,7 +26,7 @@ st.title("fst Copilot")
 def get_duckdb_conn():
     return duckdb.connect("jaffle_shop.duckdb")
 
-
+@st.cache_data
 def run_query(query):
     conn = get_duckdb_conn()
     result = conn.execute(query).fetchdf()
