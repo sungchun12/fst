@@ -4,7 +4,6 @@ import duckdb
 import plotly.express as px
 import os
 from functools import lru_cache
-import numpy as np
 import streamlit_ace
 from fst.db_utils import get_duckdb_file_path
 
