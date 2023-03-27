@@ -41,18 +41,6 @@ FROM table_name
 LIMIT 10;
 """
 
-
-def on_query_change(query):
-    if query.strip():
-        try:
-            df = run_query(query)
-            st.dataframe(df)
-        except Exception as e:
-            st.error(f"Error running query: {e}")
-    else:
-        st.error("Query is empty.")
-
-
 query = streamlit_ace.st_ace(
     value=sql_placeholder,
     theme="tomorrow",
