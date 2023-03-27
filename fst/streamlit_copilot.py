@@ -126,6 +126,7 @@ show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 if st.button("Toggle **latest** compiled code snippet for selected option"):
     show_code = not show_code
     st.experimental_set_query_params(show_code=show_code)
+st.code(f"{selected_row['compiled_sql_file']}", language="text")
 
 if show_code:
     with open(selected_row["compiled_sql_file"], "r") as f:
