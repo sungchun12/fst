@@ -10,6 +10,7 @@ from fst.db_utils import get_duckdb_file_path
 
 
 # Function to fetch metrics data from DuckDB
+@st.cache_data
 def fetch_metrics_data():
     with duckdb.connect("fst_metrics.duckdb") as duckdb_conn:
         metrics_df = duckdb_conn.execute("SELECT * FROM metrics").fetchdf()
@@ -50,7 +51,6 @@ query = streamlit_ace.st_ace(
     key="sql_input",
     auto_update=True,
 )
-
 
 class DataFrameHighlighter:
     def __init__(self, dataframe):
