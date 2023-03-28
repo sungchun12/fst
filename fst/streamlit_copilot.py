@@ -1,7 +1,6 @@
 import os
-from functools import lru_cache
+from functools import cached_property, lru_cache
 from typing import List
-
 import duckdb
 import pandas as pd
 import plotly.express as px
@@ -32,6 +31,7 @@ class DataFrameHighlighter:
     def __init__(self, dataframe: pd.DataFrame):
         self.dataframe = dataframe
 
+    @cached_property
     def highlight(self) -> pd.io.formats.style.Styler:
         def column_style(column: pd.Series) -> List[str]:
             is_duplicate = column.duplicated(keep=False)
@@ -74,7 +74,7 @@ def main() -> None:
     if query.strip():
         try:
             df = run_query(query)
-            highlighted_df = DataFrameHighlighter(df).highlight()
+            highlighted_df = DataFrameHighlighter(df).highlight
             st.dataframe(highlighted_df)
         except Exception as e:
             st.error(f"Error running query: {e}")
@@ -95,6 +95,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
     selected_row = sorted_metrics_df.iloc[selected_index]
 
     show_selected_row(selected_row)
+    show_performance_metrics(selected_row, sorted_metrics_df)
     show_compiled_code(selected_row)
 
 
@@ -110,11 +111,8 @@ def show_selected_row(selected_row: pd.Series) -> None:
     st.write(result_preview_df)
     st.code(f"{selected_row['modified_sql_file']}", language="text")
 
-    show_performance_metrics(selected_row)
 
-
-def show_performance_metrics(selected_row: pd.Series) -> None:
-    metrics_df = fetch_metrics_data()
+def show_performance_metrics(selected_row: pd.Series, metrics_df: pd.DataFrame) -> None:
     filtered_metrics_df = metrics_df.loc[
         metrics_df["modified_sql_file"] == selected_row["modified_sql_file"]
     ].copy()
