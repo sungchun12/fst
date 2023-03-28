@@ -56,10 +56,11 @@ def main() -> None:
     metrics_df = fetch_metrics_data()
 
     sql_placeholder = (
-        "-- Write your SQL query here for ad hoc investigations\n"
-        "-- pink background indicates duplicate values\n"
-        "-- yellow background indicates null values\n"
-        "select 1 as id\n"
+        "-- Write your exploratory SQL query here\n"
+        "-- pink == duplicate values\n"
+        "-- yellow == null values\n"
+        "-- show all tables command below\n"
+        "show\n"
     )
 
     query = streamlit_ace.st_ace(
