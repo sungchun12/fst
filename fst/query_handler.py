@@ -1,4 +1,4 @@
-from watchdog.events import FileSystemEventHandler
+from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from threading import Timer
 import logging
 import os
@@ -8,7 +8,7 @@ from tabulate import tabulate
 import duckdb
 import json
 from datetime import date, datetime
-from typing import Optional, Any
+from typing import Optional, Callable, Any
 
 from fst.file_utils import (
     get_active_file,
@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 
 
 class DynamicQueryHandler(FileSystemEventHandler):
-    def __init__(self, callback, models_dir: str):
+    def __init__(self, callback: Callable, models_dir: str):
         self.callback = callback
         self.models_dir = models_dir
         self.debounce_timer: Optional[Timer] = None
 
-    def on_modified(self, event) -> None:
+    def on_modified(self, event: FileSystemEvent) -> None:
         if event.src_path.endswith(".sql"):
             # Check if the modified file is in any subdirectory under models_dir
             if os.path.commonpath([self.models_dir, event.src_path]) == self.models_dir:
