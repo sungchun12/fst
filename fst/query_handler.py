@@ -7,8 +7,8 @@ import subprocess
 from tabulate import tabulate
 import duckdb
 import json
-import datetime
-from datetime import date
+from datetime import date, datetime
+from typing import Optional, Any
 
 from fst.file_utils import (
     get_active_file,
@@ -25,36 +25,35 @@ class DynamicQueryHandler(FileSystemEventHandler):
     def __init__(self, callback, models_dir: str):
         self.callback = callback
         self.models_dir = models_dir
-        self.debounce_timer = None
+        self.debounce_timer: Optional[Timer] = None
 
-    def on_modified(self, event):
+    def on_modified(self, event) -> None:
         if event.src_path.endswith(".sql"):
             # Check if the modified file is in any subdirectory under models_dir
             if os.path.commonpath([self.models_dir, event.src_path]) == self.models_dir:
                 self.debounce()
                 self.handle_query_for_file(event.src_path)
 
-    def debounce(self):
+    def debounce(self) -> None:
         if self.debounce_timer is not None:
             self.debounce_timer.cancel()
         self.debounce_timer = Timer(1.5, self.debounce_query)
         self.debounce_timer.start()
 
-    def debounce_query(self):
+    def debounce_query(self) -> None:
         if self.debounce_timer is not None:
             self.debounce_timer.cancel()
             self.debounce_timer = None
 
-    def handle_query_for_file(self, file_path):
+    def handle_query_for_file(self, file_path: str) -> None:
         with open(file_path, "r") as file:
             query = file.read()
         if query is not None and query.strip():
             handle_query(query, file_path)
 
 
-
 class DateEncoder(json.JSONEncoder):
-    def default(self, obj):
+    def default(self, obj: Any) -> Any:
         if isinstance(obj, date):
             return obj.isoformat()
         return super(DateEncoder, self).default(obj)
