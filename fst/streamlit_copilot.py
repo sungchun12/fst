@@ -9,12 +9,6 @@ import streamlit_ace
 from fst.db_utils import get_duckdb_file_path
 
 
-def fetch_metrics_data() -> pd.DataFrame:
-    with duckdb.connect("fst_metrics.duckdb") as duckdb_conn:
-        metrics_df = duckdb_conn.execute("SELECT * FROM metrics").fetchdf()
-    return metrics_df
-
-
 @lru_cache(maxsize=1)
 def get_duckdb_conn() -> duckdb.DuckDBPyConnection:
     return duckdb.connect(get_duckdb_file_path())
@@ -54,7 +48,17 @@ def main() -> None:
     st.title("fst Copilot")
 
     metrics_df = fetch_metrics_data()
+    display_query_section(metrics_df)
+    show_metrics(metrics_df)
 
+
+def fetch_metrics_data() -> pd.DataFrame:
+    with duckdb.connect("fst_metrics.duckdb") as duckdb_conn:
+        metrics_df = duckdb_conn.execute("SELECT * FROM metrics").fetchdf()
+    return metrics_df
+
+
+def display_query_section(metrics_df: pd.DataFrame) -> None:
     sql_placeholder = (
         "-- Write your exploratory SQL query here\n"
         "-- pink == duplicate values\n"
@@ -82,7 +86,6 @@ def main() -> None:
     else:
         st.error("Query is empty.")
 
-    show_metrics(metrics_df)
 
 
 def show_metrics(metrics_df: pd.DataFrame) -> None:
