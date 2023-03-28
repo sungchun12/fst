@@ -1,5 +1,4 @@
 import duckdb
-import os
 from functools import lru_cache
 from fst.config_defaults import PROFILES
 import logging
