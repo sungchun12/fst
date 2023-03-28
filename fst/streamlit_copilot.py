@@ -91,12 +91,13 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
     selected_option = st.selectbox(
         "Select a row to display the result preview:", options=index_options, index=0
     )
-    selected_index = index_options.index(selected_option)
-    selected_row = sorted_metrics_df.iloc[selected_index]
+    if selected_option is not None:
+        selected_index = index_options.index(selected_option)
+        selected_row = sorted_metrics_df.iloc[selected_index]
 
-    show_selected_row(selected_row)
-    show_performance_metrics(selected_row, sorted_metrics_df)
-    show_compiled_code(selected_row)
+        show_selected_row(selected_row)
+        show_performance_metrics(selected_row, sorted_metrics_df)
+        show_compiled_code(selected_row)
 
 
 def get_index_options(sorted_metrics_df: pd.DataFrame) -> List[str]:
