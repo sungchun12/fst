@@ -48,7 +48,7 @@ def main() -> None:
     st.title("fst Copilot")
 
     metrics_df = fetch_metrics_data()
-    display_query_section(metrics_df)
+    display_query_section()
     show_metrics(metrics_df)
 
 
@@ -58,7 +58,7 @@ def fetch_metrics_data() -> pd.DataFrame:
     return metrics_df
 
 
-def display_query_section(metrics_df: pd.DataFrame) -> None:
+def display_query_section() -> None:
     sql_placeholder = (
         "-- Write your exploratory SQL query here\n"
         "-- pink == duplicate values\n"

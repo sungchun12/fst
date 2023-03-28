@@ -1,17 +1,17 @@
-import os
 import time
 from watchdog.observers.polling import PollingObserver
+from watchdog.events import FileSystemEventHandler
 import logging
 
 logger = logging.getLogger(__name__)
 
-observer = None
+observer: PollingObserver = None
 
 
 def watch_directory(
-    event_handler,
+    event_handler: FileSystemEventHandler,
     file_path: str,
-):
+) -> None:
     global observer
     logger.info(f"Started watching directory: {file_path}")
     observer = PollingObserver()
