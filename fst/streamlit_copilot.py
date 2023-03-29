@@ -10,9 +10,11 @@ from fst.db_utils import get_duckdb_file_path
 
 
 #TODO: add an optional debug button for the sql query runner as it's not useful to be on always
-#TODO: add more context to the selection box to guide the user on what happened during that iteration
+#TODO: add more context to the selection box to guide the user on what happened during that iteration, this should be the compiled SQL, maybe store that as a text blob in the database as varchar?
 #TODO: show a datadiff of the data that changed between current iteration and production
 #TODO: make a selection box for the model name and a slider for the iteration, have it highlight the iteration in the chart with a dotted line
+#TODO: fix build vs. compile time for more accurate stats
+# TODO: change the toggle compiled code button to an expander
 @lru_cache(maxsize=1)
 def get_duckdb_conn() -> duckdb.DuckDBPyConnection:
     return duckdb.connect(get_duckdb_file_path())
