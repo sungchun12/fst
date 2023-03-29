@@ -165,7 +165,7 @@ def handle_query(query, file_path):
             ]
             # Use the custom DateEncoder to handle date objects
             result_preview_json = json.dumps(result_preview_dict, cls=DateEncoder)
-            current_timestamp = datetime.now()
+            current_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
             duckdb_conn = duckdb.connect("fst_metrics.duckdb")
             duckdb_conn.execute(

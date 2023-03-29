@@ -10,7 +10,6 @@ from fst.db_utils import get_duckdb_file_path
 
 
 #TODO: add an optional debug button for the sql query runner as it's not useful to be on always
-#TODO: limit selection timestamps to seconds, not milliseconds
 #TODO: add more context to the selection box to guide the user on what happened during that iteration
 #TODO: show a datadiff of the data that changed between current iteration and production
 #TODO: add tool tips
