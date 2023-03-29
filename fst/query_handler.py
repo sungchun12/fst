@@ -174,17 +174,19 @@ def handle_query(query, file_path):
                     timestamp,
                     modified_sql_file,
                     compiled_sql_file,
+                    compiled_query,
                     dbt_build_status,
                     duckdb_file_name,
                     dbt_build_time,
                     query_time,
                     result_preview_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
                 (
                     current_timestamp,
                     active_file,
                     compiled_sql_file,
+                    compiled_query,
                     dbt_build_status,
                     duckdb_file_path,
                     compile_time,

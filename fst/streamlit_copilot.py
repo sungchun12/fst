@@ -64,6 +64,7 @@ def fetch_metrics_data() -> pd.DataFrame:
                 timestamp TIMESTAMP,
                 modified_sql_file TEXT,
                 compiled_sql_file TEXT,
+                compiled_query VARCHAR,
                 dbt_build_status TEXT,
                 duckdb_file_name TEXT,
                 dbt_build_time REAL,
@@ -129,6 +130,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
         show_selected_row(selected_row)
         show_performance_metrics(selected_row, sorted_metrics_df)
         show_compiled_code(selected_row)
+        show_compiled_query(selected_row)
 
 
 def get_index_options(sorted_metrics_df: pd.DataFrame) -> List[str]:
@@ -253,6 +255,39 @@ def show_compiled_code(selected_row: pd.Series) -> None:
             compiled_sql_file_contents = f.read()
         st.code(compiled_sql_file_contents, language="sql")
 
+
+def show_compiled_query(selected_row: pd.Series) -> None:
+    query_params = st.experimental_get_query_params()
+    show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
+
+    expander = st.expander(
+        "Show iteration for compiled query for selected dbt model", expanded=show_code
+    )
+    with expander:
+        compiled_query = selected_row["compiled_query"]
+        st.code(compiled_query, language="sql")
+
+import difflib
+
+def generate_diff(a: str, b: str) -> str:
+    a_lines = a.splitlines()
+    b_lines = b.splitlines()
+
+    diff = difflib.unified_diff(a_lines, b_lines, lineterm="")
+
+    return "\n".join(list(diff))
+
+# Assuming you have two code variables code1 and code2
+code1 = "SELECT * FROM table1\nWHERE column1 = 'value';"
+code2 = "SELECT * FROM table1\nWHERE column1 = 'valueawefasdf';"
+
+diff = generate_diff(code1, code2)
+
+if diff:
+    st.markdown("#### Diff between code1 and code2:")
+    st.code(diff, language="sql")
+else:
+    st.markdown("No differences found between code1 and code2.")
 
 if __name__ == "__main__":
     main()
