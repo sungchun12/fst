@@ -28,9 +28,9 @@ def run_query(query: str) -> pd.DataFrame:
 
 
 class DataFrameHighlighter:
-    def __init__(self, dataframe: pd.DataFrame, highlight_option: str):
+    def __init__(self, dataframe: pd.DataFrame, highlight_options: List[str]):
         self.dataframe = dataframe
-        self.highlight_option = highlight_option
+        self.highlight_options = highlight_options
 
     @cached_property
     def highlight(self) -> pd.io.formats.style.Styler:
@@ -40,16 +40,15 @@ class DataFrameHighlighter:
             styles = []
 
             for dup, null in zip(is_duplicate, is_null):
-                if null and self.highlight_option in ["nulls", "both"]:
-                    styles.append("background-color: lightyellow")
-                elif dup and self.highlight_option in ["duplicates", "both"]:
-                    styles.append("background-color: lightpink")
-                else:
-                    styles.append("")
+                style = ""
+                if null and "nulls" in self.highlight_options:
+                    style = "background-color: lightyellow"
+                if dup and "duplicates" in self.highlight_options:
+                    style = "background-color: lightpink"
+                styles.append(style)
             return styles
 
         return self.dataframe.style.apply(column_style, axis=0)
-
 
 
 def main() -> None:
@@ -97,16 +96,17 @@ def display_query_section() -> None:
         auto_update=True,
     )
 
-    highlight_option = st.radio(
-        "Highlight option:",
-        ("none", "nulls", "duplicates", "both"),
-        index=3,
+    highlight_options = st.multiselect(
+        "Highlight options:",
+        options=["nulls", "duplicates"],
+        default=["nulls", "duplicates"],
+        help="Highlight nulls and/or duplicate values per column in the table below",
     )
 
     if query.strip():
         try:
             df = run_query(query)
-            highlighted_df = DataFrameHighlighter(df, highlight_option).highlight
+            highlighted_df = DataFrameHighlighter(df, highlight_options).highlight
             st.dataframe(highlighted_df)
         except Exception as e:
             st.error(f"Error running query: {e}")
