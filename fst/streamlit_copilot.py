@@ -244,7 +244,7 @@ def show_compiled_code(selected_row: pd.Series) -> None:
     show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 
     expander = st.expander(
-        "Show **latest** compiled code snippet for selected option", expanded=show_code
+        "Show **latest** compiled code snippet for selected dbt model", expanded=show_code
     )
     with expander:
         st.code(f"{selected_row['compiled_sql_file']}", language="text")
