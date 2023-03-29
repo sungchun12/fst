@@ -27,6 +27,13 @@ def find_compiled_sql_file(file_path):
     compiled_file_path = os.path.join(compiled_directory, relative_file_path)
     return compiled_file_path if os.path.exists(compiled_file_path) else None
 
+def get_model_name_from_file(file_path: str):
+    project_directory = CURRENT_WORKING_DIR
+    models_directory = os.path.join(project_directory, "models")
+    relative_file_path = os.path.relpath(file_path, models_directory)
+    model_name, _ = os.path.splitext(relative_file_path)
+    return model_name.replace(os.sep, ".")
+
 def find_tests_for_model(model_name, directory='models'):
     """
     Check if tests are generated for a given model in a dbt project.
@@ -58,12 +65,7 @@ def find_tests_for_model(model_name, directory='models'):
 
     return tests_data
 
-def get_model_name_from_file(file_path: str):
-    project_directory = CURRENT_WORKING_DIR
-    models_directory = os.path.join(project_directory, "models")
-    relative_file_path = os.path.relpath(file_path, models_directory)
-    model_name, _ = os.path.splitext(relative_file_path)
-    return model_name.replace(os.sep, ".")
+
 
 import yaml
 import re
