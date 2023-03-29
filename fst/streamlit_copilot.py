@@ -28,8 +28,9 @@ def run_query(query: str) -> pd.DataFrame:
 
 
 class DataFrameHighlighter:
-    def __init__(self, dataframe: pd.DataFrame):
+    def __init__(self, dataframe: pd.DataFrame, highlight_option: str):
         self.dataframe = dataframe
+        self.highlight_option = highlight_option
 
     @cached_property
     def highlight(self) -> pd.io.formats.style.Styler:
@@ -39,15 +40,16 @@ class DataFrameHighlighter:
             styles = []
 
             for dup, null in zip(is_duplicate, is_null):
-                if null:
+                if null and self.highlight_option in ["nulls", "both"]:
                     styles.append("background-color: lightyellow")
-                elif dup:
+                elif dup and self.highlight_option in ["duplicates", "both"]:
                     styles.append("background-color: lightpink")
                 else:
                     styles.append("")
             return styles
 
         return self.dataframe.style.apply(column_style, axis=0)
+
 
 
 def main() -> None:
@@ -95,10 +97,16 @@ def display_query_section() -> None:
         auto_update=True,
     )
 
+    highlight_option = st.radio(
+        "Highlight option:",
+        ("none", "nulls", "duplicates", "both"),
+        index=3,
+    )
+
     if query.strip():
         try:
             df = run_query(query)
-            highlighted_df = DataFrameHighlighter(df).highlight
+            highlighted_df = DataFrameHighlighter(df, highlight_option).highlight
             st.dataframe(highlighted_df)
         except Exception as e:
             st.error(f"Error running query: {e}")
