@@ -12,7 +12,7 @@ from fst.db_utils import get_duckdb_file_path
 #TODO: add an optional debug button for the sql query runner as it's not useful to be on always
 #TODO: add more context to the selection box to guide the user on what happened during that iteration
 #TODO: show a datadiff of the data that changed between current iteration and production
-#TODO: add tool tips
+#TODO: make a selection box for the model name and a slider for the iteration, have it highlight the iteration in the chart with a dotted line
 @lru_cache(maxsize=1)
 def get_duckdb_conn() -> duckdb.DuckDBPyConnection:
     return duckdb.connect(get_duckdb_file_path())
@@ -110,7 +110,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
 
     index_options = get_index_options(sorted_metrics_df)
     selected_option = st.selectbox(
-        "Select a row to display the result preview:", options=index_options, index=0
+        "Select a row to display the result preview (after you modify a dbt model):", options=index_options, index=0, help="Use this to understand data shape per model and performance over time. *Note: This should be blank if you haven't run dbt yet.*"
     )
     if selected_option is not None:
         selected_index = index_options.index(selected_option)
@@ -130,8 +130,8 @@ def get_index_options(sorted_metrics_df: pd.DataFrame) -> List[str]:
 
 def show_selected_row(selected_row: pd.Series) -> None:
     result_preview_df = pd.read_json(selected_row["result_preview_json"])
-    st.write(result_preview_df)
     st.code(f"{selected_row['modified_sql_file']}", language="text")
+    st.write(result_preview_df)
 
 
 def show_performance_metrics(selected_row: pd.Series, metrics_df: pd.DataFrame) -> None:
