@@ -156,22 +156,6 @@ def handle_query(query, file_path):
             else:
                 logger.error("Couldn't find the compiled SQL file.")
 
-            duckdb_conn = duckdb.connect("fst_metrics.duckdb")
-            duckdb_conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS metrics (
-                    timestamp TIMESTAMP,
-                    modified_sql_file TEXT,
-                    compiled_sql_file TEXT,
-                    dbt_build_status TEXT,
-                    duckdb_file_name TEXT,
-                    dbt_build_time REAL,
-                    query_time REAL,
-                    result_preview_json TEXT
-                )
-            """
-            )
-
             dbt_build_status = "success" if result.returncode == 0 else "failure"
             duckdb_file_path = get_duckdb_file_path()
 
@@ -183,6 +167,7 @@ def handle_query(query, file_path):
             result_preview_json = json.dumps(result_preview_dict, cls=DateEncoder)
             current_timestamp = datetime.now()
 
+            duckdb_conn = duckdb.connect("fst_metrics.duckdb")
             duckdb_conn.execute(
                 """
                 INSERT INTO metrics (

@@ -9,6 +9,11 @@ import streamlit_ace
 from fst.db_utils import get_duckdb_file_path
 
 
+#TODO: add an optional debug button for the sql query runner as it's not useful to be on always
+#TODO: limit selection timestamps to seconds, not milliseconds
+#TODO: add more context to the selection box to guide the user on what happened during that iteration
+#TODO: show a datadiff of the data that changed between current iteration and production
+#TODO: add tool tips
 @lru_cache(maxsize=1)
 def get_duckdb_conn() -> duckdb.DuckDBPyConnection:
     return duckdb.connect(get_duckdb_file_path())
@@ -54,6 +59,19 @@ def main() -> None:
 
 def fetch_metrics_data() -> pd.DataFrame:
     with duckdb.connect("fst_metrics.duckdb") as duckdb_conn:
+        create_metrics_table = """
+            CREATE TABLE IF NOT EXISTS metrics (
+                timestamp TIMESTAMP,
+                modified_sql_file TEXT,
+                compiled_sql_file TEXT,
+                dbt_build_status TEXT,
+                duckdb_file_name TEXT,
+                dbt_build_time REAL,
+                query_time REAL,
+                result_preview_json TEXT
+            )
+        """
+        duckdb_conn.execute(create_metrics_table)
         metrics_df = duckdb_conn.execute("SELECT * FROM metrics").fetchdf()
     return metrics_df
 
@@ -152,7 +170,7 @@ def create_line_chart(df: pd.DataFrame) -> px.line:
         df,
         x="index",
         y="rolling_average",
-        labels={"index": "# of Modifications", "rolling_average": "Time in Seconds"},
+        labels={"index": "# of Iterations over Time", "rolling_average": "Time in Seconds"},
     )
 
     fig.update_traces(
