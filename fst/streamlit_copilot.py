@@ -115,7 +115,7 @@ def display_query_section() -> None:
 
 
 def show_metrics(metrics_df: pd.DataFrame) -> None:
-    sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=False)
+    sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=True)
 
     model_options = sorted_metrics_df["modified_sql_file"].unique()
     selected_model = st.selectbox(
