@@ -1,6 +1,6 @@
 import os
 from functools import cached_property, lru_cache
-from typing import List
+from typing import List, Optional
 import duckdb
 import pandas as pd
 import plotly.express as px
@@ -116,7 +116,6 @@ def display_query_section() -> None:
         else:
             st.error("Query is empty.")
 
-
 def show_metrics(metrics_df: pd.DataFrame) -> None:
     sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=True)
 
@@ -149,9 +148,10 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
             selected_iteration = iteration_options[selected_iteration_index]
         else:
             selected_iteration = iteration_options[0]
-            st.write("There is only one iteration available.")
+            st.write("No Slider Options: There is only one iteration available")
 
         selected_row = filtered_metrics_df.loc[filtered_metrics_df["timestamp"] == selected_iteration].iloc[0]
+        selected_iteration_index = filtered_metrics_df.index[filtered_metrics_df["timestamp"] == selected_iteration].tolist()[0]
 
         selected_timestamp(selected_iteration)
         show_selected_row(selected_row)
@@ -175,10 +175,13 @@ def show_selected_row(selected_row: pd.Series) -> None:
     st.write(result_preview_df)
 
 
-def show_performance_metrics(selected_row: pd.Series, metrics_df: pd.DataFrame, selected_iteration_index: int) -> None:
+def show_performance_metrics(selected_row: pd.Series, metrics_df: pd.DataFrame, selected_iteration_index: Optional[int] = None) -> None:
     filtered_metrics_df = metrics_df.loc[
         metrics_df["modified_sql_file"] == selected_row["modified_sql_file"]
     ].copy()
+
+    if selected_iteration_index is None:
+        selected_iteration_index = metrics_df["index"].min()
 
     average_dbt_build_time = filtered_metrics_df["dbt_build_time"].mean()
     average_query_time = filtered_metrics_df["query_time"].mean()
