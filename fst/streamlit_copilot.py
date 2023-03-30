@@ -86,31 +86,35 @@ def display_query_section() -> None:
         "show\n"
     )
 
-    query = streamlit_ace.st_ace(
-        value=sql_placeholder,
-        theme="tomorrow",
-        height=150,
-        language="sql",
-        key="sql_input",
-        auto_update=True,
+    expander = st.expander(
+        "Run ad hoc queries against your development database"
     )
+    with expander:
+        query = streamlit_ace.st_ace(
+            value=sql_placeholder,
+            theme="tomorrow",
+            height=150,
+            language="sql",
+            key="sql_input",
+            auto_update=True,
+        )
 
-    highlight_options = st.multiselect(
-        "Highlight options:",
-        options=["nulls", "duplicates"],
-        default=["nulls", "duplicates"],
-        help="Highlight nulls and/or duplicate values per column in the table below",
-    )
+        highlight_options = st.multiselect(
+            "Highlight options:",
+            options=["nulls", "duplicates"],
+            default=["nulls", "duplicates"],
+            help="Highlight nulls and/or duplicate values per column in the table below",
+        )
 
-    if query.strip():
-        try:
-            df = run_query(query)
-            highlighted_df = DataFrameHighlighter(df, highlight_options).highlight
-            st.dataframe(highlighted_df)
-        except Exception as e:
-            st.error(f"Error running query: {e}")
-    else:
-        st.error("Query is empty.")
+        if query.strip():
+            try:
+                df = run_query(query)
+                highlighted_df = DataFrameHighlighter(df, highlight_options).highlight
+                st.dataframe(highlighted_df)
+            except Exception as e:
+                st.error(f"Error running query: {e}")
+        else:
+            st.error("Query is empty.")
 
 
 def show_metrics(metrics_df: pd.DataFrame) -> None:
@@ -132,7 +136,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
         if num_iterations > 1:
             min_iteration_index = 0
             max_iteration_index = num_iterations - 1
-            slider_label = "Select an iteration (starts at 0):"
+            slider_label = "Select across iterations (starts at 0):"
 
             selected_iteration_index = st.slider(
                 slider_label,
