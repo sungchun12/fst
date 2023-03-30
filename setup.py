@@ -16,9 +16,13 @@ setup(
         "pyyaml",
         "pygments",
         "colorlog",
-        "duckdb",
+        "duckdb==0.7.1",
         "termcolor",
         "tabulate",
-        "click"
+        "click",
+        "streamlit",
+        "plotly",
+        "streamlit-ace==0.1.1",
+        "streamlit-diff-viewer==0.0.2",
     ],
 )

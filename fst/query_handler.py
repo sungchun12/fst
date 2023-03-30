@@ -1,10 +1,14 @@
-from watchdog.events import FileSystemEventHandler
+from watchdog.events import FileSystemEventHandler, FileSystemEvent
 from threading import Timer
 import logging
 import os
 import time
 import subprocess
 from tabulate import tabulate
+import duckdb
+import json
+from datetime import date, datetime
+from typing import Optional, Callable, Any
 
 from fst.file_utils import (
     get_active_file,
@@ -18,33 +22,41 @@ logger = logging.getLogger(__name__)
 
 
 class DynamicQueryHandler(FileSystemEventHandler):
-    def __init__(self, callback, models_dir: str):
+    def __init__(self, callback: Callable, models_dir: str):
         self.callback = callback
         self.models_dir = models_dir
-        self.debounce_timer = None
+        self.debounce_timer: Optional[Timer] = None
 
-    def on_modified(self, event):
+    def on_modified(self, event: FileSystemEvent) -> None:
         if event.src_path.endswith(".sql"):
-            if os.path.dirname(event.src_path) == self.models_dir:
+            # Check if the modified file is in any subdirectory under models_dir
+            if os.path.commonpath([self.models_dir, event.src_path]) == self.models_dir:
                 self.debounce()
                 self.handle_query_for_file(event.src_path)
 
-    def debounce(self):
+    def debounce(self) -> None:
         if self.debounce_timer is not None:
             self.debounce_timer.cancel()
         self.debounce_timer = Timer(1.5, self.debounce_query)
         self.debounce_timer.start()
 
-    def debounce_query(self):
+    def debounce_query(self) -> None:
         if self.debounce_timer is not None:
             self.debounce_timer.cancel()
             self.debounce_timer = None
 
-    def handle_query_for_file(self, file_path):
+    def handle_query_for_file(self, file_path: str) -> None:
         with open(file_path, "r") as file:
             query = file.read()
         if query is not None and query.strip():
             handle_query(query, file_path)
+
+
+class DateEncoder(json.JSONEncoder):
+    def default(self, obj: Any) -> Any:
+        if isinstance(obj, date):
+            return obj.isoformat()
+        return super(DateEncoder, self).default(obj)
 
 
 def handle_query(query, file_path):
@@ -60,7 +72,7 @@ def handle_query(query, file_path):
                 f"Running `dbt build` with the modified SQL file ({active_file})..."
             )
             result = subprocess.run(
-                ["dbt", "build", "--select", model_name],
+                ["dbt", "build", "--select", model_name, "--store-failures"],
                 capture_output=True,
                 text=True,
             )
@@ -105,16 +117,17 @@ def handle_query(query, file_path):
                             "Running `dbt test` with the generated test YAML file..."
                         )
                         result_rerun = subprocess.run(
-                            ["dbt", "test", "--select", model_name],
+                            ["dbt", "test", "--select", model_name, "--store-failures"],
                             capture_output=True,
                             text=True,
                         )
                         if result_rerun.returncode == 0:
-                            logger.info("`dbt test` with generated tests was successful.")
+                            logger.info(
+                                "`dbt test` with generated tests was successful."
+                            )
                             logger.info(result_rerun.stdout)
                     else:
                         logger.error("Couldn't find the generated test YAML file.")
-
 
             compiled_sql_file = find_compiled_sql_file(file_path)
             if compiled_sql_file:
@@ -125,7 +138,7 @@ def handle_query(query, file_path):
                     logger.info(f"Using DuckDB file: {duckdb_file_path}")
 
                     start_time = time.time()
-                    result, column_names = execute_query(
+                    preview_result, column_names = execute_query(
                         compiled_query, duckdb_file_path
                     )
                     query_time = time.time() - start_time
@@ -136,10 +149,56 @@ def handle_query(query, file_path):
                     logger.info(
                         "Result Preview"
                         + "\n"
-                        + tabulate(result, headers=column_names, tablefmt="grid")
+                        + tabulate(
+                            preview_result, headers=column_names, tablefmt="grid"
+                        )
                     )
             else:
                 logger.error("Couldn't find the compiled SQL file.")
+
+            dbt_build_status = "success" if result.returncode == 0 else "failure"
+            duckdb_file_path = get_duckdb_file_path()
+
+            # Convert the result and column_names to JSON
+            result_preview_dict = [
+                dict(zip(column_names, row)) for row in preview_result
+            ]
+            # Use the custom DateEncoder to handle date objects
+            result_preview_json = json.dumps(result_preview_dict, cls=DateEncoder)
+            current_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+
+            duckdb_conn = duckdb.connect("fst_metrics.duckdb")
+            duckdb_conn.execute(
+                """
+                INSERT INTO metrics (
+                    timestamp,
+                    modified_sql_file,
+                    compiled_sql_file,
+                    compiled_query,
+                    dbt_build_status,
+                    duckdb_file_name,
+                    dbt_build_time,
+                    query_time,
+                    result_preview_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    current_timestamp,
+                    active_file,
+                    compiled_sql_file,
+                    compiled_query,
+                    dbt_build_status,
+                    duckdb_file_path,
+                    compile_time,
+                    query_time,
+                    result_preview_json,
+                ),
+            )
+
+            duckdb_conn.commit()
+            duckdb_conn.close()
+            logger.info("fst metrics saved to the database: fst_metrics.duckdb")
+
         except Exception as e:
             logger.error(f"Error: {e}")
     else:
