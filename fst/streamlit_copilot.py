@@ -149,12 +149,8 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
             st.write("There is only one iteration available.")
 
         selected_row = filtered_metrics_df.loc[filtered_metrics_df["timestamp"] == selected_iteration].iloc[0]
-        utc_timestamp = selected_iteration.strftime('%Y-%m-%d %H:%M:%S')
-        pacific = pytz.timezone('US/Pacific')
-        pacific_timestamp = selected_iteration.replace(tzinfo=pytz.utc).astimezone(pacific).strftime('%Y-%m-%d %I:%M:%S %p')
 
-        st.write(f"Selected iteration timestamp (UTC): {utc_timestamp} | (Pacific Time): {pacific_timestamp}")
-
+        selected_timestamp(selected_iteration)
         show_selected_row(selected_row)
         view_code_diffs(selected_row)
         show_performance_metrics(selected_row, sorted_metrics_df)
@@ -162,6 +158,13 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
         show_compiled_query(selected_row)
     else:
         st.warning("No iterations found for any dbt models. Modify a dbt model to see results here.")
+
+def selected_timestamp(selected_iteration: pd.Series) -> None:
+    utc_timestamp = selected_iteration.strftime('%Y-%m-%d %H:%M:%S')
+    pacific = pytz.timezone('US/Pacific')
+    pacific_timestamp = selected_iteration.replace(tzinfo=pytz.utc).astimezone(pacific).strftime('%Y-%m-%d %I:%M:%S %p')
+
+    st.write(f"Selected iteration timestamp (UTC): {utc_timestamp} | (Pacific Time): {pacific_timestamp}")
 
 
 def show_selected_row(selected_row: pd.Series) -> None:
