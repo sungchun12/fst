@@ -12,7 +12,6 @@ import pytz
 
 
 # TODO: show a datadiff of the data that changed between current iteration and production
-# TODO: make a selection box for the model name and a select slider for the iteration based on the timestamp, have it highlight the iteration in the chart with a dotted line bar
 # TODO: fix build vs. compile time for more accurate stats
 @lru_cache(maxsize=1)
 def get_duckdb_conn() -> duckdb.DuckDBPyConnection:
