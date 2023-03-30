@@ -153,7 +153,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
         selected_timestamp(selected_iteration)
         show_selected_row(selected_row)
         view_code_diffs(selected_row)
-        show_performance_metrics(selected_row, sorted_metrics_df)
+        show_performance_metrics(selected_row, sorted_metrics_df, selected_iteration_index)
         show_compiled_code(selected_row)
         show_compiled_query(selected_row)
     else:
@@ -172,7 +172,7 @@ def show_selected_row(selected_row: pd.Series) -> None:
     st.write(result_preview_df)
 
 
-def show_performance_metrics(selected_row: pd.Series, metrics_df: pd.DataFrame) -> None:
+def show_performance_metrics(selected_row: pd.Series, metrics_df: pd.DataFrame, selected_iteration_index: int) -> None:
     filtered_metrics_df = metrics_df.loc[
         metrics_df["modified_sql_file"] == selected_row["modified_sql_file"]
     ].copy()
@@ -191,7 +191,9 @@ def show_performance_metrics(selected_row: pd.Series, metrics_df: pd.DataFrame) 
 
     filtered_metrics_df = filtered_metrics_df.reset_index()
 
-    fig = create_line_chart(filtered_metrics_df)
+    # Pass the selected_iteration_index as the second argument
+    fig = create_line_chart(filtered_metrics_df, selected_iteration_index)
+
     st.write(fig)
 
     show_file_modifications_and_performance_metrics(metrics_df)
@@ -202,7 +204,7 @@ def calculate_rolling_average(df: pd.DataFrame, column: str) -> pd.Series:
     return df[column].rolling(window=len(df), min_periods=1).mean()
 
 
-def create_line_chart(df: pd.DataFrame) -> px.line:
+def create_line_chart(df: pd.DataFrame, selected_iteration_index: int) -> px.line:
     fig = px.line(
         df,
         x="index",
@@ -226,6 +228,23 @@ def create_line_chart(df: pd.DataFrame) -> px.line:
             y=df.loc[mask, "dbt_build_time"],
             marker=dict(color=color),
             name=status.capitalize(),
+        )
+
+    filtered_df = df.loc[df["index"] == selected_iteration_index]
+
+    if not filtered_df.empty:
+        selected_row = filtered_df.iloc[0]
+        fig.add_shape(
+            type="rect",
+            x0=selected_row["index"] - 0.5,
+            x1=selected_row["index"] + 0.5,
+            y0=0,
+            y1=selected_row["dbt_build_time"],
+            yref="y",
+            xref="x",
+            line=dict(color="purple", width=2, dash="dot"),
+            fillcolor="purple",
+            opacity=0.2
         )
 
     return fig
