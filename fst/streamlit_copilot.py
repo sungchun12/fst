@@ -87,7 +87,7 @@ def display_query_section() -> None:
     )
 
     expander = st.expander(
-        "Run ad hoc queries against your development database"
+        "Run ad hoc SQL queries against your development database"
     )
     with expander:
         query = streamlit_ace.st_ace(
