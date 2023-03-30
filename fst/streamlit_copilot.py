@@ -7,6 +7,7 @@ import plotly.express as px
 import streamlit as st
 import streamlit_ace
 from fst.db_utils import get_duckdb_file_path
+import diff_viewer
 
 
 # TODO: add more context to the selection box to guide the user on what happened during that iteration, this should be the compiled SQL, maybe store that as a text blob in the database as varchar?
@@ -128,6 +129,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
         selected_row = sorted_metrics_df.iloc[selected_index]
 
         show_selected_row(selected_row)
+        view_code_diffs(selected_row)
         show_performance_metrics(selected_row, sorted_metrics_df)
         show_compiled_code(selected_row)
         show_compiled_query(selected_row)
@@ -267,27 +269,15 @@ def show_compiled_query(selected_row: pd.Series) -> None:
         compiled_query = selected_row["compiled_query"]
         st.code(compiled_query, language="sql")
 
-import difflib
 
-def generate_diff(a: str, b: str) -> str:
-    a_lines = a.splitlines()
-    b_lines = b.splitlines()
+def view_code_diffs(selected_row: pd.Series) -> None:
+    old_code = selected_row["compiled_query"]
+    with open(selected_row["compiled_sql_file"], "r") as f:
+        new_code = f.read()
 
-    diff = difflib.unified_diff(a_lines, b_lines, lineterm="")
-
-    return "\n".join(list(diff))
-
-# Assuming you have two code variables code1 and code2
-code1 = "SELECT * FROM table1\nWHERE column1 = 'value';"
-code2 = "SELECT * FROM table1\nWHERE column1 = 'valueawefasdf';"
-
-diff = generate_diff(code1, code2)
-
-if diff:
-    st.markdown("#### Diff between code1 and code2:")
-    st.code(diff, language="sql")
-else:
-    st.markdown("No differences found between code1 and code2.")
+    expander = st.expander("View code diffs [Left=Selection, Right=Latest, Blank=No diffs]", expanded=True)
+    with expander:
+        diff_viewer.diff_viewer(old_text=old_code, new_text=new_code, lang='sql')
 
 if __name__ == "__main__":
     main()

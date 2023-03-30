@@ -22,6 +22,7 @@ setup(
         "click",
         "streamlit",
         "plotly",
-        "streamlit-ace==0.1.1"
+        "streamlit-ace==0.1.1",
+        "streamlit-diff-viewer==0.0.2",
     ],
 )
