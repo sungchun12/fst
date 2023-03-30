@@ -230,10 +230,8 @@ def create_line_chart(df: pd.DataFrame, selected_iteration_index: int) -> px.lin
             name=status.capitalize(),
         )
 
-    filtered_df = df.loc[df["index"] == selected_iteration_index]
-
-    if not filtered_df.empty:
-        selected_row = filtered_df.iloc[0]
+    if not df.empty:
+        selected_row = df.loc[selected_iteration_index]
         fig.add_shape(
             type="rect",
             x0=selected_row["index"] - 0.5,
@@ -248,6 +246,7 @@ def create_line_chart(df: pd.DataFrame, selected_iteration_index: int) -> px.lin
         )
 
     return fig
+
 
 
 def show_file_modifications_and_performance_metrics(metrics_df: pd.DataFrame) -> None:
