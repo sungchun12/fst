@@ -163,12 +163,6 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
     else:
         st.warning("No iterations found for any dbt models. Modify a dbt model to see results here.")
 
-def get_index_options(sorted_metrics_df: pd.DataFrame) -> List[str]:
-    return [
-        f"{row.timestamp} - {os.path.basename(row.modified_sql_file)}"
-        for row in sorted_metrics_df.itertuples()
-    ]
-
 
 def show_selected_row(selected_row: pd.Series) -> None:
     result_preview_df = pd.read_json(selected_row["result_preview_json"])
