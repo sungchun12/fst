@@ -8,7 +8,7 @@ from fst.file_utils import get_models_directory
 from fst.query_handler import handle_query, DynamicQueryHandler
 from fst.directory_watcher import watch_directory
 from fst.logger import setup_logger
-from fst.config_defaults import CURRENT_WORKING_DIR
+from fst.config_defaults import CURRENT_WORKING_DIR, PREVIEW_LIMIT_ROWS
 
 
 @click.group()
@@ -47,6 +47,11 @@ def listener_process(queue: multiprocessing.Queue) -> None:
     default=CURRENT_WORKING_DIR,
     type=click.Path(exists=True, dir_okay=True, readable=True, resolve_path=True),
     help="dbt project root directory. Defaults to current working directory.",
+)
+@click.option(
+    "--preview-limit",
+    default=PREVIEW_LIMIT_ROWS,
+    help="Set the number of rows to preview in the UI. Defaults to 5.",
 )
 def start(path: str) -> None:
     log_queue = multiprocessing.Queue()
