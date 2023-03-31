@@ -9,7 +9,19 @@ import streamlit_ace
 from fst.db_utils import get_duckdb_file_path
 import diff_viewer
 import pytz
+from marvin import ai_fn
 
+# custom_css = """
+# <style>
+# .stCodeBlock pre {
+#     white-space: pre-wrap;
+#     word-wrap: break-word;
+# }
+# </style>
+# """
+
+# # Add custom CSS to the Streamlit app
+# st.markdown(custom_css, unsafe_allow_html=True)
 
 # TODO: show a datadiff of the data that changed between current iteration and production
 # TODO: fix build vs. compile time for more accurate stats
@@ -156,6 +168,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
         selected_timestamp(selected_iteration)
         show_selected_row(selected_row)
         view_code_diffs(selected_row)
+        st.write(explain_sql_performance(selected_row['compiled_query']))
         show_performance_metrics(selected_row, sorted_metrics_df, selected_iteration_index)
         show_compiled_code(selected_row)
         show_compiled_query(selected_row)
@@ -326,6 +339,16 @@ def view_code_diffs(selected_row: pd.Series) -> None:
     expander = st.expander("View code diffs [Left=Selection, Right=Latest, Blank=No diffs]", expanded=True)
     with expander:
         diff_viewer.diff_viewer(old_text=old_code, new_text=new_code, lang='sql')
+
+
+@st.cache_data
+@ai_fn
+def explain_sql_performance(compiled_sql: str) -> list[str]:
+    """
+    Given sql query text, returns an explanation of what could be better about the SQL in terms of performance and formatting
+    """
+
+
 
 if __name__ == "__main__":
     main()
