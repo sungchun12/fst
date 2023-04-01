@@ -17,9 +17,13 @@ from fst.file_utils import (
     generate_test_yaml,
 )
 from fst.db_utils import get_duckdb_file_path, execute_query
-from fst.config_defaults import PREVIEW_LIMIT_ROWS
+from fst.config_defaults import CONFIG
+
 
 logger = logging.getLogger(__name__)
+
+# Access the updated value of PREVIEW_LIMIT_ROWS
+preview_limit_rows = CONFIG["PREVIEW_LIMIT_ROWS"]
 
 
 class DynamicQueryHandler(FileSystemEventHandler):
@@ -61,6 +65,9 @@ class DateEncoder(json.JSONEncoder):
 
 
 def handle_query(query, file_path):
+     # Access the updated value of PREVIEW_LIMIT_ROWS
+    preview_limit_rows = CONFIG["PREVIEW_LIMIT_ROWS"]
+
     if query.strip():
         try:
             start_time = time.time()
@@ -98,8 +105,7 @@ def handle_query(query, file_path):
                     with open(compiled_sql_file, "r") as file:
                         compiled_query = file.read()
                     duckdb_file_path = get_duckdb_file_path()
-                    print(PREVIEW_LIMIT_ROWS)
-                    _, column_names = execute_query(compiled_query, duckdb_file_path, 10)
+                    _, column_names = execute_query(compiled_query, duckdb_file_path, preview_limit_rows)
 
                     warning_message = "Warning: No tests were run with the `dbt build` command. Consider adding tests to your project."
 
@@ -138,11 +144,10 @@ def handle_query(query, file_path):
                     logger.info(f"Executing compiled query from: {compiled_sql_file}")
                     duckdb_file_path = get_duckdb_file_path()
                     logger.info(f"Using DuckDB file: {duckdb_file_path}")
-                    print(PREVIEW_LIMIT_ROWS)
 
                     start_time = time.time()
                     preview_result, column_names = execute_query(
-                        compiled_query, duckdb_file_path, 10
+                        compiled_query, duckdb_file_path, preview_limit_rows
                     )
                     query_time = time.time() - start_time
 

@@ -7,11 +7,9 @@ from typing import List, Tuple, Any
 logger = logging.getLogger(__name__)
 
 @lru_cache(maxsize=128)
-def execute_query(query: str, db_file: str,  limit:int = None) -> Tuple[List[Tuple[Any]], List[str]]:
+def execute_query(query: str, db_file: str,  limit:int = 5) -> Tuple[List[Tuple[Any]], List[str]]:
     connection = duckdb.connect(database=db_file, read_only=False)
-    if limit is not None:
-        query += f" LIMIT {limit}"
-    result = connection.execute(query).fetchmany(5)
+    result = connection.execute(query).fetchmany(limit)
     column_names = [desc[0] for desc in connection.description]
     connection.close()
     return result, column_names
