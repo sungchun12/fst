@@ -11,7 +11,6 @@ import diff_viewer
 import pytz
 
 
-# TODO: show a datadiff of the data that changed between current iteration and production
 # TODO: fix build vs. compile time for more accurate stats
 @lru_cache(maxsize=1)
 def get_duckdb_conn() -> duckdb.DuckDBPyConnection:
