@@ -10,13 +10,14 @@ from fst.db_utils import get_duckdb_file_path
 import diff_viewer
 import pytz
 
-#TODO: get every component in the main function
+# TODO: get every component in the main function
 # TODO: make everything an expander
 # TODO: add tooltips to expanders that explaiin the problem being solved for and the solution with that component
 # TODO: fix build vs. compile time for more accurate stats
-#TODO: what would be so killer about this is if it persists information and average performance of production models along with the dev models for slider options. You continue to progress and see what's been done before!
-#TODO: fix a bug where when dbt build fails that it doesn't finish the rest of the metrics collection
+# TODO: what would be so killer about this is if it persists information and average performance of production models along with the dev models for slider options. You continue to progress and see what's been done before!
+# TODO: fix a bug where when dbt build fails that it doesn't finish the rest of the metrics collection
 # TODO: add fst logo
+
 
 @lru_cache(maxsize=1)
 def get_duckdb_conn() -> duckdb.DuckDBPyConnection:
@@ -55,8 +56,6 @@ class DataFrameHighlighter:
 
 
 def main() -> None:
-    # st.title("fst Copilot")
-
     metrics_df = fetch_metrics_data()
     display_query_section()
     show_metrics(metrics_df)
@@ -121,6 +120,7 @@ def display_query_section() -> None:
         else:
             st.error("Query is empty.")
 
+
 def show_metrics(metrics_df: pd.DataFrame) -> None:
     sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=True)
 
@@ -132,7 +132,9 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
         help="Only models that have been modified at least once are shown here with the full file path",
     )
 
-    filtered_metrics_df = sorted_metrics_df.loc[sorted_metrics_df["modified_sql_file"] == selected_model].copy()
+    filtered_metrics_df = sorted_metrics_df.loc[
+        sorted_metrics_df["modified_sql_file"] == selected_model
+    ].copy()
     filtered_metrics_df = filtered_metrics_df.reset_index()
 
     iteration_options = filtered_metrics_df["timestamp"].tolist()
@@ -149,7 +151,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
                 max_value=max_iteration_index,
                 value=max_iteration_index,
                 format="%d",
-                help="The slider starts at zero and add options for this model as you modify it"
+                help="The slider starts at zero and adds options for this model as you modify it",
             )
 
             selected_iteration = iteration_options[selected_iteration_index]
@@ -157,32 +159,51 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
             selected_iteration = iteration_options[0]
             st.write("*No Slider Options: There is only one iteration available*")
 
-        selected_row = filtered_metrics_df.loc[filtered_metrics_df["timestamp"] == selected_iteration].iloc[0]
-        selected_iteration_index = filtered_metrics_df.index[filtered_metrics_df["timestamp"] == selected_iteration].tolist()[0]
+        selected_row = filtered_metrics_df.loc[
+            filtered_metrics_df["timestamp"] == selected_iteration
+        ].iloc[0]
+        selected_iteration_index = filtered_metrics_df.index[
+            filtered_metrics_df["timestamp"] == selected_iteration
+        ].tolist()[0]
 
         selected_timestamp(selected_iteration)
-        show_selected_row(selected_row)
+        show_selected_data_preview(selected_row)
         view_code_diffs(selected_row)
-        show_performance_metrics(selected_row, sorted_metrics_df, selected_iteration_index)
-        show_compiled_code(selected_row)
-        show_compiled_query(selected_row)
+        show_performance_metrics(
+            selected_row, sorted_metrics_df, selected_iteration_index
+        )
+        show_compiled_code_latest(selected_row)
+        show_compiled_code_selected(selected_row)
     else:
-        st.warning("No iterations found for any dbt models. Modify a dbt model to see results here.")
+        st.warning(
+            "No iterations found for any dbt models. Modify a dbt model to see results here."
+        )
+
 
 def selected_timestamp(selected_iteration: pd.Series) -> None:
-    utc_timestamp = selected_iteration.strftime('%Y-%m-%d %H:%M:%S')
-    pacific = pytz.timezone('US/Pacific')
-    pacific_timestamp = selected_iteration.replace(tzinfo=pytz.utc).astimezone(pacific).strftime('%Y-%m-%d %I:%M:%S %p')
+    utc_timestamp = selected_iteration.strftime("%Y-%m-%d %H:%M:%S")
+    pacific = pytz.timezone("US/Pacific")
+    pacific_timestamp = (
+        selected_iteration.replace(tzinfo=pytz.utc)
+        .astimezone(pacific)
+        .strftime("%Y-%m-%d %I:%M:%S %p")
+    )
 
-    st.write(f"*Selected slider option timestamp (UTC): {utc_timestamp} | (Pacific Time): {pacific_timestamp}*")
+    st.write(
+        f"*Selected slider option timestamp (UTC): {utc_timestamp} | (Pacific Time): {pacific_timestamp}*"
+    )
 
 
-def show_selected_row(selected_row: pd.Series) -> None:
+def show_selected_data_preview(selected_row: pd.Series) -> None:
     result_preview_df = pd.read_json(selected_row["result_preview_json"])
     st.write(result_preview_df)
 
 
-def show_performance_metrics(selected_row: pd.Series, metrics_df: pd.DataFrame, selected_iteration_index: Optional[int] = None) -> None:
+def show_performance_metrics(
+    selected_row: pd.Series,
+    metrics_df: pd.DataFrame,
+    selected_iteration_index: Optional[int] = None,
+) -> None:
     filtered_metrics_df = metrics_df.loc[
         metrics_df["modified_sql_file"] == selected_row["modified_sql_file"]
     ].copy()
@@ -247,11 +268,10 @@ def create_line_chart(df: pd.DataFrame, selected_iteration_index: int) -> px.lin
             xref="x",
             line=dict(color="purple", width=2, dash="dot"),
             fillcolor="purple",
-            opacity=0.2
+            opacity=0.2,
         )
 
     return fig
-
 
 
 def show_file_modifications_and_performance_metrics(metrics_df: pd.DataFrame) -> None:
@@ -290,7 +310,7 @@ def get_file_modifications_and_performance_metrics(
     return file_modifications_and_performance
 
 
-def show_compiled_code(selected_row: pd.Series) -> None:
+def show_compiled_code_latest(selected_row: pd.Series) -> None:
     query_params = st.experimental_get_query_params()
     show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 
@@ -305,12 +325,13 @@ def show_compiled_code(selected_row: pd.Series) -> None:
         st.code(compiled_sql_file_contents, language="sql")
 
 
-def show_compiled_query(selected_row: pd.Series) -> None:
+def show_compiled_code_selected(selected_row: pd.Series) -> None:
     query_params = st.experimental_get_query_params()
     show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 
     expander = st.expander(
-        "**Show compiled code for the dbt model slider option selected**", expanded=show_code
+        "**Show compiled code for the dbt model slider option selected**",
+        expanded=show_code,
     )
     with expander:
         compiled_query = selected_row["compiled_query"]
@@ -322,9 +343,13 @@ def view_code_diffs(selected_row: pd.Series) -> None:
     with open(selected_row["compiled_sql_file"], "r") as f:
         new_code = f.read()
 
-    expander = st.expander("View code diffs [Left=Slider Option, Right=Latest Code, Blank=No diffs]", expanded=True)
+    expander = st.expander(
+        "View code diffs [Left=Slider Option, Right=Latest Code, Blank=No diffs]",
+        expanded=True,
+    )
     with expander:
-        diff_viewer.diff_viewer(old_text=old_code, new_text=new_code, lang='sql')
+        diff_viewer.diff_viewer(old_text=old_code, new_text=new_code, lang="sql")
+
 
 if __name__ == "__main__":
     main()
