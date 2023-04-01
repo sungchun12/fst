@@ -11,6 +11,8 @@ from fst.logger import setup_logger
 from fst.config_defaults import CURRENT_WORKING_DIR, CONFIG
 
 
+logger = logging.getLogger(__name__)
+
 @click.group()
 def main() -> None:
     setup_logger()
@@ -22,7 +24,6 @@ def start_streamlit() -> None:
     subprocess.run(["streamlit", "run", streamlit_app_path])
 
 def start_directory_watcher(path: str, log_queue: multiprocessing.Queue) -> None:
-    setup_logger(log_queue)
     project_dir = path
     models_dir = get_models_directory(project_dir)
     event_handler = DynamicQueryHandler(handle_query, models_dir)
