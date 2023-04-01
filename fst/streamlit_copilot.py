@@ -15,6 +15,8 @@ import pytz
 # TODO: add tooltips to expanders that explaiin the problem being solved for and the solution with that component
 # TODO: fix build vs. compile time for more accurate stats
 #TODO: what would be so killer about this is if it persists information and average performance of production models along with the dev models for slider options. You continue to progress and see what's been done before!
+#TODO: fix a bug where when dbt build fails that it doesn't finish the rest of the metrics collection
+# TODO: add fst logo
 
 @lru_cache(maxsize=1)
 def get_duckdb_conn() -> duckdb.DuckDBPyConnection:
@@ -293,7 +295,7 @@ def show_compiled_code(selected_row: pd.Series) -> None:
     show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 
     expander = st.expander(
-        "Show **latest** compiled code snippet for selected dbt model", expanded=show_code
+        "**Show latest compiled code for focused on dbt model**", expanded=show_code
     )
     with expander:
         st.code(f"{selected_row['compiled_sql_file']}", language="text")
@@ -308,7 +310,7 @@ def show_compiled_query(selected_row: pd.Series) -> None:
     show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 
     expander = st.expander(
-        "**Reveal compiled query for the dbt model slider option selected**", expanded=show_code
+        "**Show compiled code for the dbt model slider option selected**", expanded=show_code
     )
     with expander:
         compiled_query = selected_row["compiled_query"]
