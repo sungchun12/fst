@@ -17,6 +17,7 @@ from fst.file_utils import (
     generate_test_yaml,
 )
 from fst.db_utils import get_duckdb_file_path, execute_query
+from fst.config_defaults import PREVIEW_LIMIT_ROWS
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +98,8 @@ def handle_query(query, file_path):
                     with open(compiled_sql_file, "r") as file:
                         compiled_query = file.read()
                     duckdb_file_path = get_duckdb_file_path()
-                    _, column_names = execute_query(compiled_query, duckdb_file_path)
+                    print(PREVIEW_LIMIT_ROWS)
+                    _, column_names = execute_query(compiled_query, duckdb_file_path, 10)
 
                     warning_message = "Warning: No tests were run with the `dbt build` command. Consider adding tests to your project."
 
@@ -136,10 +138,11 @@ def handle_query(query, file_path):
                     logger.info(f"Executing compiled query from: {compiled_sql_file}")
                     duckdb_file_path = get_duckdb_file_path()
                     logger.info(f"Using DuckDB file: {duckdb_file_path}")
+                    print(PREVIEW_LIMIT_ROWS)
 
                     start_time = time.time()
                     preview_result, column_names = execute_query(
-                        compiled_query, duckdb_file_path
+                        compiled_query, duckdb_file_path, 10
                     )
                     query_time = time.time() - start_time
 

@@ -53,7 +53,8 @@ def listener_process(queue: multiprocessing.Queue) -> None:
     default=PREVIEW_LIMIT_ROWS,
     help="Set the number of rows to preview in the UI. Defaults to 5.",
 )
-def start(path: str) -> None:
+def start(path: str, preview_limit: int) -> None:
+    PREVIEW_LIMIT_ROWS = preview_limit
     log_queue = multiprocessing.Queue()
     dir_watcher_process = multiprocessing.Process(
         target=start_directory_watcher, args=(path, log_queue)
