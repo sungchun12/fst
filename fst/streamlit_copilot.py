@@ -41,7 +41,7 @@ class DataFrameHighlighter:
                 style = ""
                 if null and "nulls" in self.highlight_options:
                     style = "background-color: lightyellow"
-                if dup and "duplicates" in self.highlight_options:
+                elif dup and "duplicates" in self.highlight_options:
                     style = "background-color: lightpink"
                 styles.append(style)
             return styles
