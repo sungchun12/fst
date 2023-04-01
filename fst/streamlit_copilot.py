@@ -10,8 +10,12 @@ from fst.db_utils import get_duckdb_file_path
 import diff_viewer
 import pytz
 
-
+#TODO: get every component in the main function
+# TODO: make everything an expander
+# TODO: add tooltips to expanders that explaiin the problem being solved for and the solution with that component
 # TODO: fix build vs. compile time for more accurate stats
+#TODO: what would be so killer about this is if it persists information and average performance of production models along with the dev models for slider options. You continue to progress and see what's been done before!
+
 @lru_cache(maxsize=1)
 def get_duckdb_conn() -> duckdb.DuckDBPyConnection:
     return duckdb.connect(get_duckdb_file_path())
@@ -49,7 +53,7 @@ class DataFrameHighlighter:
 
 
 def main() -> None:
-    st.title("fst Copilot")
+    # st.title("fst Copilot")
 
     metrics_df = fetch_metrics_data()
     display_query_section()
@@ -86,7 +90,7 @@ def display_query_section() -> None:
     )
 
     expander = st.expander(
-        "Run ad hoc SQL queries against your development database"
+        "**Run ad hoc SQL queries against your development database**"
     )
     with expander:
         query = streamlit_ace.st_ace(
@@ -120,9 +124,10 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
 
     model_options = sorted_metrics_df["modified_sql_file"].unique()
     selected_model = st.selectbox(
-        "Select a dbt model:",
+        "**Focus on a dbt model to work on:**",
         options=model_options,
         index=0,
+        help="Only models that have been modified at least once are shown here with the full file path",
     )
 
     filtered_metrics_df = sorted_metrics_df.loc[sorted_metrics_df["modified_sql_file"] == selected_model].copy()
@@ -134,20 +139,21 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
         if num_iterations > 1:
             min_iteration_index = 0
             max_iteration_index = num_iterations - 1
-            slider_label = "Select across iterations (starts at 0):"
+            slider_label = "**Move the slider left and right to see how the model changed in code/performance with a data preview:**"
 
             selected_iteration_index = st.slider(
                 slider_label,
                 min_value=min_iteration_index,
                 max_value=max_iteration_index,
                 value=max_iteration_index,
-                format="%d"
+                format="%d",
+                help="The slider starts at zero and add options for this model as you modify it"
             )
 
             selected_iteration = iteration_options[selected_iteration_index]
         else:
             selected_iteration = iteration_options[0]
-            st.write("No Slider Options: There is only one iteration available")
+            st.write("*No Slider Options: There is only one iteration available*")
 
         selected_row = filtered_metrics_df.loc[filtered_metrics_df["timestamp"] == selected_iteration].iloc[0]
         selected_iteration_index = filtered_metrics_df.index[filtered_metrics_df["timestamp"] == selected_iteration].tolist()[0]
@@ -166,7 +172,7 @@ def selected_timestamp(selected_iteration: pd.Series) -> None:
     pacific = pytz.timezone('US/Pacific')
     pacific_timestamp = selected_iteration.replace(tzinfo=pytz.utc).astimezone(pacific).strftime('%Y-%m-%d %I:%M:%S %p')
 
-    st.write(f"Selected iteration timestamp (UTC): {utc_timestamp} | (Pacific Time): {pacific_timestamp}")
+    st.write(f"*Selected slider option timestamp (UTC): {utc_timestamp} | (Pacific Time): {pacific_timestamp}*")
 
 
 def show_selected_row(selected_row: pd.Series) -> None:
@@ -181,14 +187,6 @@ def show_performance_metrics(selected_row: pd.Series, metrics_df: pd.DataFrame, 
 
     if selected_iteration_index is None:
         selected_iteration_index = metrics_df["index"].min()
-
-    average_dbt_build_time = filtered_metrics_df["dbt_build_time"].mean()
-    average_query_time = filtered_metrics_df["query_time"].mean()
-
-    st.write(
-        f"Average `dbt build` time: **{average_dbt_build_time:.2f} seconds** | "
-        f"Average query time: **{average_query_time:.2f} seconds**"
-    )
 
     filtered_metrics_df.loc[:, "rolling_average"] = calculate_rolling_average(
         filtered_metrics_df, "dbt_build_time"
@@ -263,7 +261,7 @@ def show_file_modifications_and_performance_metrics(metrics_df: pd.DataFrame) ->
         metrics_df
     )
 
-    st.write("### File Modifications and Average Performance Stats")
+    st.write("*All File Modifications and Average Performance Stats*")
     st.write(file_modifications_and_performance)
 
 
@@ -310,7 +308,7 @@ def show_compiled_query(selected_row: pd.Series) -> None:
     show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 
     expander = st.expander(
-        "Show iteration for compiled query for selected dbt model", expanded=show_code
+        "**Reveal compiled query for the dbt model slider option selected**", expanded=show_code
     )
     with expander:
         compiled_query = selected_row["compiled_query"]
@@ -322,7 +320,7 @@ def view_code_diffs(selected_row: pd.Series) -> None:
     with open(selected_row["compiled_sql_file"], "r") as f:
         new_code = f.read()
 
-    expander = st.expander("View code diffs [Left=Selection, Right=Latest, Blank=No diffs]", expanded=True)
+    expander = st.expander("View code diffs [Left=Slider Option, Right=Latest Code, Blank=No diffs]", expanded=True)
     with expander:
         diff_viewer.diff_viewer(old_text=old_code, new_text=new_code, lang='sql')
 
