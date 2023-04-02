@@ -12,11 +12,12 @@ import pytz
 
 # TODO: get every component in the main function
 # TODO: make everything an expander
-# TODO: add tooltips to expanders that explaiin the problem being solved for and the solution with that component
 # TODO: fix build vs. compile time for more accurate stats
 # TODO: what would be so killer about this is if it persists information and average performance of production models along with the dev models for slider options. You continue to progress and see what's been done before!
 # TODO: fix a bug where when dbt build fails that it doesn't finish the rest of the metrics collection
 # TODO: add fst logo
+#TODO: show potential cost of queries in dollars for production
+#TODO: add a way to see WHY each iteration failed, I should probably store the logs in fst_metrics.duckdb
 
 
 @lru_cache(maxsize=1)
