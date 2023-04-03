@@ -412,27 +412,30 @@ def transpile_sql_util() -> None:
 
 
 def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
-    expander = st.expander("**Compare any 2 iterations side by side**")
+    expander = st.expander("**Compare any 2 iterations side by side for the dbt model in focus**")
     with expander:
-        st.write("Choose the iterations you want to compare:")
 
         iterations = filtered_metrics_df["timestamp"].tolist()
 
-        first_iteration = st.selectbox(
-            "First Iteration:",
-            options=iterations,
-            index=0,
-            help="Select the first iteration for comparison",
-            key="first_iteration_selectbox"  # Add a unique key
-        )
+        select_box_left, select_box_right = st.columns(2)
 
-        second_iteration = st.selectbox(
-            "Second Iteration:",
-            options=iterations,
-            index=len(iterations) - 1,
-            help="Select the second iteration for comparison",
-            key="second_iteration_selectbox"  # Add a unique key
-        )
+        with select_box_left: 
+            first_iteration = st.selectbox(
+                "Left Iteration:",
+                options=iterations,
+                index=0,
+                help="Select the left iteration for comparison",
+                key="select_box_left"  # Add a unique key
+            )
+
+        with select_box_right: 
+            second_iteration = st.selectbox(
+                "Second Iteration:",
+                options=iterations,
+                index=len(iterations) - 1,
+                help="Select the second iteration for comparison",
+                key="select_box_right"  # Add a unique key
+            )
 
         first_row = filtered_metrics_df.loc[
             filtered_metrics_df["timestamp"] == first_iteration
