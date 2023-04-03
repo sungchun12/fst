@@ -18,7 +18,7 @@ def main() -> None:
 
 def start_streamlit() -> None:
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    streamlit_app_path = os.path.join(current_dir, "streamlit_copilot.py")
+    streamlit_app_path = os.path.join(current_dir, "fst_workbench.py")
     subprocess.run(["streamlit", "run", streamlit_app_path])
 
 def start_directory_watcher(path: str, log_queue: multiprocessing.Queue) -> None:
