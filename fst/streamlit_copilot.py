@@ -356,7 +356,7 @@ def view_code_diffs(selected_row: pd.Series) -> None:
 
 def transpile_sql_util() -> None:
     expander = st.expander(
-        "**Transpile SQL from and to different dialects to get the benefits of syntax problems solved for one dialect to automatically translate to the one you're focused on, even if it's not duckd**",
+        "**Transpile SQL from and to dialects to get the benefits of syntax problems solved for one dialect to automatically translate to the one you're focused on**",
         expanded=True,
     )
     with expander:
