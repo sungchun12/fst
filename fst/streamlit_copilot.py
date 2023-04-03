@@ -170,9 +170,13 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
             filtered_metrics_df["timestamp"] == selected_iteration
         ].tolist()[0]
 
+        old_code = selected_row["compiled_query"]
+        with open(selected_row["compiled_sql_file"], "r") as f:
+            latest_code = f.read()
+
         selected_timestamp(selected_iteration)
         show_selected_data_preview(selected_row)
-        view_code_diffs(selected_row)
+        view_code_diffs(old_code, latest_code)
         show_performance_metrics(
             selected_row, sorted_metrics_df, selected_iteration_index
         )
@@ -343,16 +347,7 @@ def show_compiled_code_selected(selected_row: pd.Series) -> None:
         st.code(compiled_query, language="sql")
 
 
-def view_code_diffs(selected_row: pd.Series) -> None:
-    old_code = selected_row["compiled_query"]
-    with open(selected_row["compiled_sql_file"], "r") as f:
-        new_code = f.read()
-
-    # expander = st.expander(
-    #     "View code diffs [Left=Slider Option, Right=Latest Code, Blank=No diffs]",
-    #     expanded=True,
-    # )
-    # with expander:
+def view_code_diffs(old_code: str, new_code: str) -> None:
     diff_viewer.diff_viewer(old_text=old_code, new_text=new_code, lang="sql")
 
 
@@ -428,6 +423,7 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
             options=iterations,
             index=0,
             help="Select the first iteration for comparison",
+            key="first_iteration_selectbox"  # Add a unique key
         )
 
         second_iteration = st.selectbox(
@@ -435,6 +431,7 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
             options=iterations,
             index=len(iterations) - 1,
             help="Select the second iteration for comparison",
+            key="second_iteration_selectbox"  # Add a unique key
         )
 
         first_row = filtered_metrics_df.loc[
@@ -450,12 +447,14 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
         with col1:
             st.subheader(f"Left Iteration ({first_iteration})")
             show_selected_data_preview(first_row)
-            view_code_diffs(first_row)
 
         with col2:
             st.subheader(f"Right Iteration ({second_iteration})")
             show_selected_data_preview(second_row)
-            view_code_diffs(second_row)
+
+        old_code = first_row["compiled_query"]
+        new_code = second_row["compiled_query"]
+        view_code_diffs(old_code, new_code)
 
 
 if __name__ == "__main__":
