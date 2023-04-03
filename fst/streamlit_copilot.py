@@ -19,6 +19,7 @@ import sqlglot
 # TODO: add fst logo
 # TODO: show potential cost of queries in dollars for production
 # TODO: add a way to see WHY each iteration failed/succeeded, I should probably store the logs in fst_metrics.duckdb
+#TODO: add a way to see something like dbt audit helper between iterations to see what changed
 
 
 @lru_cache(maxsize=1)
