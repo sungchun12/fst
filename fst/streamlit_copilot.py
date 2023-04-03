@@ -9,6 +9,7 @@ import streamlit_ace
 from fst.db_utils import get_duckdb_file_path
 import diff_viewer
 import pytz
+import sqlglot
 
 # TODO: get every component in the main function
 # TODO: make everything an expander
@@ -16,8 +17,8 @@ import pytz
 # TODO: what would be so killer about this is if it persists information and average performance of production models along with the dev models for slider options. You continue to progress and see what's been done before!
 # TODO: fix a bug where when dbt build fails with candidate bindings that it doesn't finish the rest of the metrics collection
 # TODO: add fst logo
-#TODO: show potential cost of queries in dollars for production
-#TODO: add a way to see WHY each iteration failed/succeeded, I should probably store the logs in fst_metrics.duckdb
+# TODO: show potential cost of queries in dollars for production
+# TODO: add a way to see WHY each iteration failed/succeeded, I should probably store the logs in fst_metrics.duckdb
 
 
 @lru_cache(maxsize=1)
@@ -60,6 +61,7 @@ def main() -> None:
     metrics_df = fetch_metrics_data()
     display_query_section()
     show_metrics(metrics_df)
+    transpile_sql_util()
 
 
 def fetch_metrics_data() -> pd.DataFrame:
@@ -350,6 +352,64 @@ def view_code_diffs(selected_row: pd.Series) -> None:
     )
     with expander:
         diff_viewer.diff_viewer(old_text=old_code, new_text=new_code, lang="sql")
+
+
+def transpile_sql_util() -> None:
+    expander = st.expander(
+        "**Transpile SQL from and to different dialects to get the benefits of syntax problems solved for one dialect to automatically translate to the one you're focused on, even if it's not duckd**",
+        expanded=True,
+    )
+    with expander:
+        # Define the list of supported dialects
+        SUPPORTED_DIALECTS = [
+            "databricks",
+            "redshift",
+            "postgres",
+            "duckdb",
+            "sqlite",
+            "snowflake",
+            "bigquery",
+            "trino",
+            "clickhouse",
+            "drill",
+            "hive",
+            "mysql",
+            "oracle",
+            "presto",
+            "spark",
+            "starrocks",
+            "tableau",
+            "teradata",
+            "tsql",
+        ]
+        # Create an Ace text area for input SQL
+        sql_placeholder = "SELECT DATEADD(year, 1, TIMESTAMP'2020–01–01') as `foo bar`"
+        input_sql = streamlit_ace.st_ace(
+            value=sql_placeholder,
+            theme="tomorrow",
+            height=150,
+            language="sql",
+            key="input_sql",
+            auto_update=True,
+        )
+
+        # Create a 'from' dialect dropdown and a 'to' dialect dropdown side by side
+        from_dialect, to_dialect = st.columns(2)
+        from_dialect = from_dialect.selectbox("From Dialect", SUPPORTED_DIALECTS)
+        to_dialect = to_dialect.selectbox("To Dialect", SUPPORTED_DIALECTS)
+
+        # Create a button to trigger the transpilation
+        if st.button("Transpile SQL", use_container_width=True):
+            try:
+                # Transpile the input SQL from the selected 'from' dialect to the selected 'to' dialect
+                transpiled_sql = sqlglot.transpile(
+                    input_sql, read=from_dialect, write=to_dialect
+                )[0]
+
+                # Display the transpiled SQL
+                st.code(transpiled_sql, language="sql")
+            except Exception as e:
+                st.error(f"Error: {e}")
 
 
 if __name__ == "__main__":
