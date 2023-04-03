@@ -176,7 +176,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
 
         selected_timestamp(selected_iteration)
         show_selected_data_preview(selected_row)
-        view_code_diffs(old_code, latest_code)
+        view_code_diffs(old_code, latest_code, key="compare_old_latest")
         compare_two_iterations(filtered_metrics_df)
         show_performance_metrics(
             selected_row, sorted_metrics_df, selected_iteration_index
@@ -347,8 +347,8 @@ def show_compiled_code_selected(selected_row: pd.Series) -> None:
         st.code(compiled_query, language="sql")
 
 
-def view_code_diffs(old_code: str, new_code: str) -> None:
-    diff_viewer.diff_viewer(old_text=old_code, new_text=new_code, lang="sql")
+def view_code_diffs(old_code: str, new_code: str, key: str = None) -> None:
+    diff_viewer.diff_viewer(old_text=old_code, new_text=new_code, lang="sql", key=key)
 
 
 def transpile_sql_util() -> None:
@@ -458,7 +458,7 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
 
         old_code = first_row["compiled_query"]
         new_code = second_row["compiled_query"]
-        view_code_diffs(old_code, new_code)
+        view_code_diffs(old_code, new_code, key="compare_two_iterations")
 
 
 if __name__ == "__main__":
