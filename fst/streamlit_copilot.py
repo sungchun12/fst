@@ -177,12 +177,12 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
         selected_timestamp(selected_iteration)
         show_selected_data_preview(selected_row)
         view_code_diffs(old_code, latest_code)
+        compare_two_iterations(filtered_metrics_df)
         show_performance_metrics(
             selected_row, sorted_metrics_df, selected_iteration_index
         )
         show_compiled_code_latest(selected_row)
         show_compiled_code_selected(selected_row)
-        compare_two_iterations(filtered_metrics_df)
     else:
         st.warning(
             "No iterations found for any dbt models. Modify a dbt model to see results here."
