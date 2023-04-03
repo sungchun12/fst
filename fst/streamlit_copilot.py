@@ -399,7 +399,7 @@ def transpile_sql_util() -> None:
         to_dialect = to_dialect.selectbox("To Dialect", SUPPORTED_DIALECTS)
 
         # Create a button to trigger the transpilation
-        if st.button("Transpile SQL", use_container_width=True):
+        if st.button("Transpile SQL", use_container_width=True, type="primary"):
             try:
                 # Transpile the input SQL from the selected 'from' dialect to the selected 'to' dialect
                 transpiled_sql = sqlglot.transpile(
