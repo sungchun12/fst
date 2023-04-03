@@ -421,7 +421,7 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
 
         with select_box_left: 
             first_iteration = st.selectbox(
-                "Left Iteration:",
+                "**Left Iteration:**",
                 options=iterations,
                 index=0,
                 help="Select the left iteration for comparison",
@@ -430,7 +430,7 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
 
         with select_box_right: 
             second_iteration = st.selectbox(
-                "Second Iteration:",
+                "**Right Iteration:**",
                 options=iterations,
                 index=len(iterations) - 1,
                 help="Select the second iteration for comparison",
@@ -448,11 +448,9 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
         col1, col2 = st.columns(2)
 
         with col1:
-            st.subheader(f"Left Iteration ({first_iteration})")
             show_selected_data_preview(first_row)
 
         with col2:
-            st.subheader(f"Right Iteration ({second_iteration})")
             show_selected_data_preview(second_row)
 
         old_code = first_row["compiled_query"]
