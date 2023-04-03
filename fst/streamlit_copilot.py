@@ -10,7 +10,6 @@ from fst.db_utils import get_duckdb_file_path
 import diff_viewer
 import pytz
 import sqlglot
-from sqlglot.optimizer import optimize
 
 # TODO: get every component in the main function
 # TODO: make everything an expander
@@ -406,10 +405,9 @@ def transpile_sql_util() -> None:
                 transpiled_sql = sqlglot.transpile(
                     input_sql, read=from_dialect, write=to_dialect
                 )[0]
-                optimized_sql = optimize(transpiled_sql).sql(pretty=True)
 
                 # Display the transpiled SQL
-                st.code(optimized_sql, language="sql")
+                st.code(transpiled_sql, language="sql")
             except Exception as e:
                 st.error(f"Error: {e}")
 
