@@ -416,33 +416,36 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
     with expander:
 
         iterations = filtered_metrics_df["timestamp"].tolist()
+        indexed_iterations = [(i, ts) for i, ts in enumerate(iterations)]
 
         select_box_left, select_box_right = st.columns(2)
 
-        with select_box_left: 
+        with select_box_left:
             first_iteration = st.selectbox(
                 "**Left Iteration:**",
-                options=iterations,
+                options=indexed_iterations,
                 index=0,
+                format_func=lambda x: f"{x[0]} - {x[1]}",
                 help="Select the left iteration for comparison",
                 key="select_box_left"  # Add a unique key
             )
 
-        with select_box_right: 
+        with select_box_right:
             second_iteration = st.selectbox(
                 "**Right Iteration:**",
-                options=iterations,
+                options=indexed_iterations,
                 index=len(iterations) - 1,
-                help="Select the second iteration for comparison",
+                format_func=lambda x: f"{x[0]} - {x[1]}",
+                help="Select the right iteration for comparison",
                 key="select_box_right"  # Add a unique key
             )
 
         first_row = filtered_metrics_df.loc[
-            filtered_metrics_df["timestamp"] == first_iteration
+            filtered_metrics_df["timestamp"] == first_iteration[1]
         ].iloc[0]
 
         second_row = filtered_metrics_df.loc[
-            filtered_metrics_df["timestamp"] == second_iteration
+            filtered_metrics_df["timestamp"] == second_iteration[1]
         ].iloc[0]
 
         col1, col2 = st.columns(2)
