@@ -383,7 +383,7 @@ def transpile_sql_util() -> None:
             "tsql",
         ]
         # Create an Ace text area for input SQL
-        sql_placeholder = "SELECT DATEADD(year, 1, TIMESTAMP'2020–01–01') as `foo bar`"
+        sql_placeholder = "SELECT DATEADD(year, '1', TIMESTAMP'2020-01-01') as 'foo bar'"
         input_sql = streamlit_ace.st_ace(
             value=sql_placeholder,
             theme="tomorrow",
