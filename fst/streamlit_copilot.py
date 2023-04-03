@@ -19,7 +19,7 @@ import sqlglot
 # TODO: add fst logo
 # TODO: show potential cost of queries in dollars for production
 # TODO: add a way to see WHY each iteration failed/succeeded, I should probably store the logs in fst_metrics.duckdb
-#TODO: add a way to see something like dbt audit helper between iterations to see what changed
+# TODO: add a way to see something like dbt audit helper between iterations to see what changed
 
 
 @lru_cache(maxsize=1)
@@ -61,8 +61,8 @@ class DataFrameHighlighter:
 def main() -> None:
     metrics_df = fetch_metrics_data()
     display_query_section()
+    # transpile_sql_util() TODO add this back in if it's useful
     show_metrics(metrics_df)
-    transpile_sql_util()
 
 
 def fetch_metrics_data() -> pd.DataFrame:
@@ -178,6 +178,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
         )
         show_compiled_code_latest(selected_row)
         show_compiled_code_selected(selected_row)
+        compare_two_iterations(filtered_metrics_df)
     else:
         st.warning(
             "No iterations found for any dbt models. Modify a dbt model to see results here."
@@ -347,12 +348,12 @@ def view_code_diffs(selected_row: pd.Series) -> None:
     with open(selected_row["compiled_sql_file"], "r") as f:
         new_code = f.read()
 
-    expander = st.expander(
-        "View code diffs [Left=Slider Option, Right=Latest Code, Blank=No diffs]",
-        expanded=True,
-    )
-    with expander:
-        diff_viewer.diff_viewer(old_text=old_code, new_text=new_code, lang="sql")
+    # expander = st.expander(
+    #     "View code diffs [Left=Slider Option, Right=Latest Code, Blank=No diffs]",
+    #     expanded=True,
+    # )
+    # with expander:
+    diff_viewer.diff_viewer(old_text=old_code, new_text=new_code, lang="sql")
 
 
 def transpile_sql_util() -> None:
@@ -384,7 +385,9 @@ def transpile_sql_util() -> None:
             "tsql",
         ]
         # Create an Ace text area for input SQL
-        sql_placeholder = "SELECT DATEADD(year, '1', TIMESTAMP'2020-01-01') as 'foo bar'"
+        sql_placeholder = (
+            "SELECT DATEADD(year, '1', TIMESTAMP'2020-01-01') as 'foo bar'"
+        )
         input_sql = streamlit_ace.st_ace(
             value=sql_placeholder,
             theme="tomorrow",
@@ -411,6 +414,48 @@ def transpile_sql_util() -> None:
                 st.code(transpiled_sql, language="sql")
             except Exception as e:
                 st.error(f"Error: {e}")
+
+
+def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
+    expander = st.expander("**Compare any 2 iterations side by side**")
+    with expander:
+        st.write("Choose the iterations you want to compare:")
+
+        iterations = filtered_metrics_df["timestamp"].tolist()
+
+        first_iteration = st.selectbox(
+            "First Iteration:",
+            options=iterations,
+            index=0,
+            help="Select the first iteration for comparison",
+        )
+
+        second_iteration = st.selectbox(
+            "Second Iteration:",
+            options=iterations,
+            index=len(iterations) - 1,
+            help="Select the second iteration for comparison",
+        )
+
+        first_row = filtered_metrics_df.loc[
+            filtered_metrics_df["timestamp"] == first_iteration
+        ].iloc[0]
+
+        second_row = filtered_metrics_df.loc[
+            filtered_metrics_df["timestamp"] == second_iteration
+        ].iloc[0]
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.subheader(f"Left Iteration ({first_iteration})")
+            show_selected_data_preview(first_row)
+            view_code_diffs(first_row)
+
+        with col2:
+            st.subheader(f"Right Iteration ({second_iteration})")
+            show_selected_data_preview(second_row)
+            view_code_diffs(second_row)
 
 
 if __name__ == "__main__":
