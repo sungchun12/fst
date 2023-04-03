@@ -147,7 +147,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
         if num_iterations > 1:
             min_iteration_index = 0
             max_iteration_index = num_iterations - 1
-            slider_label = "**Move the slider left and right to see how the model changed in code/performance with a data preview:**"
+            slider_label = "**Move the slider left to right viewing model changes in code/data/performance compared to the latest iteration:**"
 
             selected_iteration_index = st.slider(
                 slider_label,
