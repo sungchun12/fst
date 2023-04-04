@@ -477,10 +477,10 @@ def dbt_cloud_workbench() -> None:
     with expander:
         col1, col2 = st.columns(2)
         with col1:
-            service_token = get_service_token()
+            dbt_cloud_service_token = get_service_token()
         with col2:
             dbt_cloud_host_url = get_host_url()
-        validate_service_token(service_token)
+        validate_service_token(dbt_cloud_service_token)
         col3, col4, col5, col6, col7 = st.columns(5)
         with col3:
             get_account_widget()
@@ -495,27 +495,26 @@ def dbt_cloud_workbench() -> None:
 
 
 def get_host_url() -> None:
-    dbt_cloud_host_url = st.text_input(
+    session_state_key = "dbt_cloud_host_url"
+    st.text_input(
         label="Enter your dbt Cloud host URL ",
         value="cloud.getdbt.com",
-        key="dbt_cloud_host_url",
+        key=session_state_key,
         help="Only change if you're on a single tenant instance or in a non-US multi-tenant region",
     )
-    return dbt_cloud_host_url
-
-
-# api key input box similar to Doug's example, tooltip and link to docs to get it
+    return session_state_key
 
 
 def get_service_token() -> None:
-    service_token = st.text_input(
+    session_state_key = "dbt_cloud_service_token"
+    st.text_input(
         label="Enter your dbt Cloud service token",
         value="",
         type="password",
-        key="dbt_cloud_service_token",
+        key=session_state_key,
         help="[Instructions to generate an API service token with permissions: ['Metadata Only', 'Job Admin']](https://docs.getdbt.com/docs/dbt-cloud-apis/service-tokens#generating-service-account-tokens)",
     )
-    return service_token
+    return session_state_key
 
 
 def validate_service_token(service_token: str) -> None:
