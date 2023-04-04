@@ -478,6 +478,10 @@ def dbt_cloud_workbench() -> None:
         dbt_cloud_host_url = get_host_url()
         service_token = get_service_token()
         validate_service_token(service_token)
+        get_account_widget()
+        get_project_widget()
+        get_environment_widget()
+        get_run_widget()
 
 
 def get_host_url() -> None:
@@ -532,6 +536,88 @@ def validate_service_token(service_token: str) -> None:
             st.success("Success!  Explore the rest of the dbt Cloud Workbench!")
 
 
+def get_account_widget(states: List[str] = [
+    'project_index', 'job_index', 'environment_index'
+]):
+    accounts = dynamic_request(
+        st.session_state.dbtc_client.cloud,
+        'list_accounts',
+    ).get('data', [])
+    accounts = list_to_dict(accounts)
+    st.session_state.accounts = accounts
+    return st.selectbox(
+        label='Select Account',
+        options=accounts.keys(),
+        format_func=lambda x: accounts[x]['name'],
+        key='account_id',
+        on_change=clear_session_state,
+        args=(states, )
+    )
+
+
+def get_project_widget(states: List[str] = [], is_required: bool = True):
+    projects = dynamic_request(
+        st.session_state.dbtc_client.cloud,
+        'list_projects',
+        st.session_state.account_id,
+    ).get('data', [])
+    projects = list_to_dict(projects)
+    options = list(projects.keys())
+    if not is_required:
+        options.insert(0, None)
+    st.selectbox(
+        label='Select Project',
+        options=options,
+        format_func=lambda x: projects[x]['name'] if x is not None else x,
+        key='project_id',
+        on_change=clear_session_state,
+        args=(states, )
+    )
+    st.session_state.projects = projects
+
+
+def get_environment_widget(is_required: bool = True, **kwargs):
+    environments = dynamic_request(
+        st.session_state.dbtc_client.cloud,
+        'list_environments',
+        st.session_state.account_id,
+        project_id=st.session_state.get('project_id', []),
+        **kwargs
+    ).get('data', [])
+    environments = list_to_dict(environments)
+    options = list(environments.keys())
+    if not is_required:
+        options.insert(0, None)
+    st.session_state.environments = environments
+    return st.selectbox(
+        label='Select Environment',
+        options=options,
+        format_func=lambda x: environments[x]['name'] if x is not None else x,
+        key='environment_id',
+    )
+
+
+def get_run_widget(is_required: bool = True, **kwargs):
+    runs = dynamic_request(
+        st.session_state.dbtc_client.cloud,
+        'list_runs',
+        st.session_state.account_id,
+        job_definition_id=st.session_state.get('job_id', None),
+        order_by='-id',
+        **kwargs,
+    ).get('data', [])
+    runs = list_to_dict(runs, value_field='id', reverse=True)
+    options = list(runs.keys())
+    if not is_required:
+        options.insert(0, None)
+    return st.selectbox(
+        label='Select Run',
+        options=options,
+        format_func=lambda x: runs[x]['id'] if x is not None else x,
+        key='run_id',
+    )
+
+
 @st.cache_data(show_spinner=False)
 def dynamic_request(_prop, method, *args, **kwargs):
     try:
@@ -540,6 +626,10 @@ def dynamic_request(_prop, method, *args, **kwargs):
         st.error(e)
         st.stop()
 
+def clear_session_state(states: List[str]):
+    for state in states:
+        if state in st.session_state:
+            del st.session_state[state]
 
 def list_to_dict(
     ls: List[Any],
