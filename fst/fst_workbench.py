@@ -529,7 +529,7 @@ def validate_service_token(service_token: str) -> None:
                 st.session_state.account_id,
             ).get("data", [])
             st.session_state.projects = projects
-            st.success("Success!  Explore the rest of the app!")
+            st.success("Success!  Explore the rest of the dbt Cloud Workbench!")
 
 
 @st.cache_data(show_spinner=False)
