@@ -11,6 +11,8 @@ import diff_viewer
 import pytz
 import sqlglot
 from requests.exceptions import ConnectionError
+from dbtc import dbtCloudClient
+from typing import Any, List
 
 # TODO: get every component in the main function
 # TODO: make everything an expander
@@ -414,9 +416,10 @@ def transpile_sql_util() -> None:
 
 
 def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
-    expander = st.expander("**Compare any 2 iterations side by side for the dbt model in focus**")
+    expander = st.expander(
+        "**Compare any 2 iterations side by side for the dbt model in focus**"
+    )
     with expander:
-
         iterations = filtered_metrics_df["timestamp"].tolist()
         indexed_iterations = [(i, ts) for i, ts in enumerate(iterations)]
 
@@ -429,7 +432,7 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
                 index=0,
                 format_func=lambda x: f"{x[0]} - {x[1]}",
                 help="Select the left iteration for comparison",
-                key="select_box_left"  # Add a unique key
+                key="select_box_left",  # Add a unique key
             )
 
         with select_box_right:
@@ -439,7 +442,7 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
                 index=len(iterations) - 1,
                 format_func=lambda x: f"{x[0]} - {x[1]}",
                 help="Select the right iteration for comparison",
-                key="select_box_right"  # Add a unique key
+                key="select_box_right",  # Add a unique key
             )
 
         first_row = filtered_metrics_df.loc[
@@ -465,32 +468,91 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
 
 # dbt Cloud Metrics Dashboard. This dashboard is designed to help you understand your workbench progress in the aim of improving your dbt Cloud deployment experience(read: you're confident about what you're shipping works)
 # I'll put this at the top of the page
+# Huge shoutout to Doug Guthrie for the awesome code below
 # an expander: "Unleash your potential"
 def dbt_cloud_workbench() -> None:
-    expander = st.expander("**Unleash your potential: Compare your work to Production**")
+    expander = st.expander(
+        "**Unleash your potential: Compare your work to Production**"
+    )
     with expander:
         dbt_cloud_host_url = get_host_url()
         service_token = get_service_token()
+        validate_service_token(service_token)
+
 
 def get_host_url() -> None:
     dbt_cloud_host_url = st.text_input(
         label="Enter your dbt Cloud host URL ",
         value="cloud.getdbt.com",
-        key='dbt_cloud_host_url',
+        key="dbt_cloud_host_url",
         help="Only change if you're on a single tenant instance or in a non-US multi-tenant region",
     )
     return dbt_cloud_host_url
+
+
 # api key input box similar to Doug's example, tooltip and link to docs to get it
+
 
 def get_service_token() -> None:
     service_token = st.text_input(
         label="Enter your dbt Cloud service token",
         value="",
         type="password",
-        key='dbt_cloud_service_token',
-        help="[View docs](https://docs.getdbt.com/dbt-cloud/cloud-configuring-dbt-cloud/cloud-setting-up-a-service-account#creating-a-service-account]",
+        key="dbt_cloud_service_token",
+        help="[Instructions to generate an API service token with permissions: ['Metadata Only', 'Job Admin']](https://docs.getdbt.com/docs/dbt-cloud-apis/service-tokens#generating-service-account-tokens)",
     )
     return service_token
+
+
+def validate_service_token(service_token: str) -> None:
+    if st.session_state.dbt_cloud_service_token != "":
+        st.cache_data.clear()
+        st.session_state.dbtc_client = dbtCloudClient(
+            service_token=st.session_state.dbt_cloud_service_token,
+            host=st.session_state.dbt_cloud_host_url,
+        )
+        accounts = dynamic_request(
+            st.session_state.dbtc_client.cloud, "list_accounts"
+        ).get("data", [])
+        st.session_state.accounts = list_to_dict(accounts)
+        try:
+            st.session_state.account_id = list(st.session_state.accounts.keys())[0]
+        except IndexError:
+            st.error(
+                "No accounts were found with the service token entered.  "
+                "Please try again."
+            )
+        else:
+            projects = dynamic_request(
+                st.session_state.dbtc_client.cloud,
+                "list_projects",
+                st.session_state.account_id,
+            ).get("data", [])
+            st.session_state.projects = projects
+            st.success("Success!  Explore the rest of the app!")
+
+
+@st.cache_data(show_spinner=False)
+def dynamic_request(_prop, method, *args, **kwargs):
+    try:
+        return getattr(_prop, method)(*args, **kwargs)
+    except ConnectionError as e:
+        st.error(e)
+        st.stop()
+
+
+def list_to_dict(
+    ls: List[Any],
+    id_field: str = "id",
+    value_field: str = "name",
+    reverse: bool = False,
+):
+    if ls:
+        ls = sorted(ls, key=lambda d: d[value_field], reverse=reverse)
+        return {d[id_field]: d for d in ls}
+
+    return {}
+
 
 # pick a dbt cloud account and project based on the plain name, use a select box
 # do a fuzzy match on the model name
