@@ -475,13 +475,21 @@ def dbt_cloud_workbench() -> None:
         "**Unleash your potential: Compare your work to Production**"
     )
     with expander:
-        dbt_cloud_host_url = get_host_url()
-        service_token = get_service_token()
+        col1, col2 = st.columns(2)
+        with col1:
+            dbt_cloud_host_url = get_host_url()
+        with col2:
+            service_token = get_service_token()
         validate_service_token(service_token)
-        get_account_widget()
-        get_project_widget()
-        get_environment_widget()
-        get_run_widget()
+        col3, col4, col5, col6 = st.columns(4)
+        with col3:
+            get_account_widget()
+        with col4:
+            get_project_widget()
+        with col5:
+            get_environment_widget()
+        with col6:
+            get_run_widget()
 
 
 def get_host_url() -> None:
