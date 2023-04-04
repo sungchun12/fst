@@ -482,7 +482,7 @@ def dbt_cloud_workbench() -> None:
             dbt_cloud_service_token = get_service_token()
         with col2:
             dbt_cloud_host_url = get_host_url()
-        if dbt_cloud_service_token != "":
+        try: 
             validate_service_token(dbt_cloud_service_token)
             col3, col4, col5, col6, col7 = st.columns(5)
             with col3:
@@ -496,7 +496,10 @@ def dbt_cloud_workbench() -> None:
             with col7:
                 get_run_widget()
             get_models_per_job_widget()
-
+        except:
+            st.info(
+            "Enter a valid service token to get started!"
+        )
 
 def get_host_url() -> None:
     session_state_key = "dbt_cloud_host_url"
