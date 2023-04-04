@@ -477,11 +477,11 @@ def dbt_cloud_workbench() -> None:
     with expander:
         col1, col2 = st.columns(2)
         with col1:
-            dbt_cloud_host_url = get_host_url()
-        with col2:
             service_token = get_service_token()
+        with col2:
+            dbt_cloud_host_url = get_host_url()
         validate_service_token(service_token)
-        col3, col4, col5, col6 = st.columns(4)
+        col3, col4, col5, col6, col7 = st.columns(5)
         with col3:
             get_account_widget()
         with col4:
@@ -489,6 +489,8 @@ def dbt_cloud_workbench() -> None:
         with col5:
             get_environment_widget()
         with col6:
+            get_job_widget()
+        with col7:
             get_run_widget()
 
 
@@ -627,6 +629,25 @@ def get_run_widget(is_required: bool = True, **kwargs):
         )
     return session_state_key
 
+def get_job_widget(is_required: bool = True, **kwargs):
+    jobs = dynamic_request(
+        st.session_state.dbtc_client.cloud,
+        'list_jobs',
+        st.session_state.account_id,
+        project_id=st.session_state.get('project_id', None),
+        **kwargs,
+    ).get('data', [])
+    jobs = list_to_dict(jobs)
+    options = list(jobs.keys())
+    if not is_required:
+        options.insert(0, None)
+    st.session_state.jobs = jobs
+    return st.selectbox(
+        label='Select Job',
+        options=options,
+        format_func=lambda x: jobs[x]['name'] if x is not None else x,
+        key='job_id',
+    )
 
 @st.cache_data(show_spinner=False)
 def dynamic_request(_prop, method, *args, **kwargs):
