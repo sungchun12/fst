@@ -24,6 +24,7 @@ setup(
         "plotly",
         "streamlit-ace==0.1.1",
         "streamlit-diff-viewer==0.0.2",
-        "sqlglot"
+        "sqlglot",
+        "dbtc",
     ],
 )

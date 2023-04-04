@@ -10,6 +10,7 @@ from fst.db_utils import get_duckdb_file_path
 import diff_viewer
 import pytz
 import sqlglot
+from requests.exceptions import ConnectionError
 
 # TODO: get every component in the main function
 # TODO: make everything an expander
@@ -60,6 +61,7 @@ class DataFrameHighlighter:
 
 def main() -> None:
     metrics_df = fetch_metrics_data()
+    dbt_cloud_workbench()
     display_query_section()
     # transpile_sql_util() TODO add this back in if it's useful
     show_metrics(metrics_df)
@@ -461,5 +463,44 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
         view_code_diffs(old_code, new_code, key="compare_two_iterations")
 
 
+# dbt Cloud Metrics Dashboard. This dashboard is designed to help you understand your workbench progress in the aim of improving your dbt Cloud deployment experience(read: you're confident about what you're shipping works)
+# I'll put this at the top of the page
+# an expander: "Unleash your potential"
+def dbt_cloud_workbench() -> None:
+    expander = st.expander("**Unleash your potential: Compare your work to Production**")
+    with expander:
+        dbt_cloud_host_url = get_host_url()
+        service_token = get_service_token()
+
+def get_host_url() -> None:
+    dbt_cloud_host_url = st.text_input(
+        label="Enter your dbt Cloud host URL ",
+        value="cloud.getdbt.com",
+        key='dbt_cloud_host_url',
+        help="Only change if you're on a single tenant instance or in a non-US multi-tenant region",
+    )
+    return dbt_cloud_host_url
+# api key input box similar to Doug's example, tooltip and link to docs to get it
+
+def get_service_token() -> None:
+    service_token = st.text_input(
+        label="Enter your dbt Cloud service token",
+        value="",
+        type="password",
+        key='dbt_cloud_service_token',
+        help="[View docs](https://docs.getdbt.com/dbt-cloud/cloud-configuring-dbt-cloud/cloud-setting-up-a-service-account#creating-a-service-account]",
+    )
+    return service_token
+
+# pick a dbt cloud account and project based on the plain name, use a select box
+# do a fuzzy match on the model name
+# create a chart to show execution time over n production runs, show the view vs. table, success vs. failure
+# default the input text box to 10 and allow the user to change it
+# Show code diff to compare any workbench iteration to any production cloud run iteration(in the future maybe anyone's iteration)
+
+# Have hyperlinks to allow the user to easily navigate to the dbt Cloud UI for the selected model job run
+
+
+# show a table of tests and their pass and failure, if no tests, show a warning message and give the user a next step to modify the file and fst will take care of that for you ;)
 if __name__ == "__main__":
     main()
