@@ -63,7 +63,7 @@ def main() -> None:
     metrics_df = fetch_metrics_data()
     dbt_cloud_workbench()
     display_query_section()
-    # transpile_sql_util() TODO add this back in if it's useful
+    # transpile_sql_util() # TODO add this back in if it's useful
     show_metrics(metrics_df)
 
 
