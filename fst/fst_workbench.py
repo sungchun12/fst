@@ -13,6 +13,8 @@ import sqlglot
 from requests.exceptions import ConnectionError
 from dbtc import dbtCloudClient
 from typing import Any, List
+# from gql import gql, Client
+# from gql.transport.requests import RequestsHTTPTransport
 
 # TODO: get every component in the main function
 # TODO: make everything an expander
@@ -480,18 +482,20 @@ def dbt_cloud_workbench() -> None:
             dbt_cloud_service_token = get_service_token()
         with col2:
             dbt_cloud_host_url = get_host_url()
-        validate_service_token(dbt_cloud_service_token)
-        col3, col4, col5, col6, col7 = st.columns(5)
-        with col3:
-            get_account_widget()
-        with col4:
-            get_project_widget()
-        with col5:
-            get_environment_widget()
-        with col6:
-            get_job_widget()
-        with col7:
-            get_run_widget()
+        if dbt_cloud_service_token != "":
+            validate_service_token(dbt_cloud_service_token)
+            col3, col4, col5, col6, col7 = st.columns(5)
+            with col3:
+                get_account_widget()
+            with col4:
+                get_project_widget()
+            with col5:
+                get_environment_widget()
+            with col6:
+                get_job_widget()
+            with col7:
+                get_run_widget()
+            get_models_per_job_widget()
 
 
 def get_host_url() -> None:
@@ -642,6 +646,13 @@ def get_job_widget(is_required: bool = True, **kwargs):
     if not is_required:
         options.insert(0, None)
     st.session_state.jobs = jobs
+    #TODO: fix this to store job id number in session state instead of a selectbox
+    st.selectbox(
+        label="Select Job ID",
+        options=options,
+        format_func=lambda x: jobs[x]["id"] if x is not None else x,
+        key="job_id_number",
+    )
     return st.selectbox(
         label="Select Job",
         options=options,
@@ -678,7 +689,23 @@ def list_to_dict(
     return {}
 
 
-# do a fuzzy match on the model name
+def get_models_per_job_widget(is_required: bool = True, **kwargs):
+    models = dynamic_request(
+        st.session_state.dbtc_client.metadata,
+        "get_models",
+        job_id=st.session_state.get("job_id_number"),
+    ).get("data", []).get("models", [])
+    models = list_to_dict(models, id_field="uniqueId", value_field="uniqueId")
+    options = list(models.keys())
+    st.session_state.models = models
+    return st.selectbox(
+        label="Select Model",
+        options=options,
+        format_func=lambda x: models[x]["name"] if x is not None else x,
+        key="model_id",
+    )
+
+# show a table of the past n runs of the model, show the view vs. table, success vs. failure
 # create a chart to show execution time over n production runs, show the view vs. table, success vs. failure
 # default the input text box to 10 and allow the user to change it
 # Show code diff to compare any workbench iteration to any production cloud run iteration(in the future maybe anyone's iteration)
