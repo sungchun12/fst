@@ -495,11 +495,11 @@ def dbt_cloud_workbench() -> None:
                 get_job_widget()
             with col7:
                 get_run_widget()
-            get_models_per_job_widget()
         except:
             st.info(
             "Enter a valid service token to get started!"
         )
+        get_models_per_job_widget()
 
 def get_host_url() -> None:
     session_state_key = "dbt_cloud_host_url"
@@ -523,7 +523,7 @@ def get_service_token() -> None:
     )
     return session_state_key
 
-
+@st.cache_resource #TODO: figure out how to make this more performant and not refresh everytime
 def validate_service_token(service_token: str) -> None:
     if st.session_state.dbt_cloud_service_token != "":
         st.cache_data.clear()
@@ -693,20 +693,24 @@ def list_to_dict(
 
 
 def get_models_per_job_widget(is_required: bool = True, **kwargs):
-    models = dynamic_request(
-        st.session_state.dbtc_client.metadata,
-        "get_models",
-        job_id=st.session_state.get("job_id_number"),
-    ).get("data", []).get("models", [])
-    models = list_to_dict(models, id_field="uniqueId", value_field="uniqueId")
-    options = list(models.keys())
-    st.session_state.models = models
-    return st.selectbox(
-        label="Select Model",
-        options=options,
-        format_func=lambda x: models[x]["name"] if x is not None else x,
-        key="model_id",
-    )
+    try:
+        models = dynamic_request(
+            st.session_state.dbtc_client.metadata,
+            "get_models",
+            job_id=st.session_state.get("job_id_number"),
+        ).get("data", []).get("models", [])
+        models = list_to_dict(models, id_field="uniqueId", value_field="uniqueId")
+        options = list(models.keys())
+        st.session_state.models = models
+        return st.selectbox(
+            label="Select Model based on Job ID",
+            options=options,
+            format_func=lambda x: models[x]["name"] if x is not None else x,
+            key="model_id",
+            help="Blank if no models found for this job",
+        )
+    except:
+        st.warning("No models found for this job")
 
 # show a table of the past n runs of the model, show the view vs. table, success vs. failure
 # create a chart to show execution time over n production runs, show the view vs. table, success vs. failure
