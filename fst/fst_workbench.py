@@ -606,6 +606,7 @@ def get_environment_widget(is_required: bool = True, **kwargs):
 
 
 def get_run_widget(is_required: bool = True, **kwargs):
+    session_state_key = 'run_id'
     runs = dynamic_request(
         st.session_state.dbtc_client.cloud,
         'list_runs',
@@ -618,12 +619,13 @@ def get_run_widget(is_required: bool = True, **kwargs):
     options = list(runs.keys())
     if not is_required:
         options.insert(0, None)
-    return st.selectbox(
-        label='Select Run',
-        options=options,
-        format_func=lambda x: runs[x]['id'] if x is not None else x,
-        key='run_id',
-    )
+    st.selectbox(
+            label='Select Run',
+            options=options,
+            format_func=lambda x: runs[x]['id'] if x is not None else x,
+            key=session_state_key,
+        )
+    return session_state_key
 
 
 @st.cache_data(show_spinner=False)
@@ -652,7 +654,6 @@ def list_to_dict(
     return {}
 
 
-# pick a dbt cloud account and project based on the plain name, use a select box
 # do a fuzzy match on the model name
 # create a chart to show execution time over n production runs, show the view vs. table, success vs. failure
 # default the input text box to 10 and allow the user to change it
