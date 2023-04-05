@@ -526,10 +526,8 @@ def get_service_token() -> None:
     return session_state_key
 
 
-# @st.cache_data(show_spinner=False) #TODO: figure out how to make this more performant and not refresh everytime
 def validate_service_token(service_token: str) -> None:
     if st.session_state.dbt_cloud_service_token != "":
-        st.cache_data.clear()
         st.session_state.dbtc_client = dbtCloudClient(
             service_token=st.session_state.dbt_cloud_service_token,
             host=st.session_state.dbt_cloud_host_url,
