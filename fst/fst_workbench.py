@@ -867,7 +867,7 @@ def plot_execution_time_chart(df: pd.DataFrame):
         title="Execution Time by Run Generated At",
         labels={"Execution Time": "Execution Time (s)"},
         height=400,
-        hover_data=["Materialized Type"]
+        hover_data=["Run ID", "Materialized Type"]
     )
 
     # Update the y-axis to start at 0
@@ -886,12 +886,12 @@ def compare_selected_runs(model_runs_df: pd.DataFrame):
     sorted_run_ids = sorted(run_ids)  # Sort the list in ascending order
 
     selected_indices = st.slider(
-        "Select Run IDs to compare",
+        "Select Deployed Iterations to compare",
         min_value=0,
         max_value=len(sorted_run_ids) - 1,
-        value=(0, len(sorted_run_ids) - 1),
+        value=len(sorted_run_ids) - 1,
         format="%d",
-        key="compare_runs_slider",
+        key="compare_production_runs_slider",
     )
 
 
