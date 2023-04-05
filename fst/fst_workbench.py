@@ -1,6 +1,6 @@
 import os
 from functools import cached_property, lru_cache
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import duckdb
 import pandas as pd
 import plotly.express as px
@@ -838,62 +838,93 @@ def get_model_past_runs_widget(is_required: bool = True, **kwargs):
 
         # Display the DataFrame with the selected fields
         st.dataframe(formatted_model_runs_df[selected_fields])
-        plot_execution_time_chart(formatted_model_runs_df)
         return formatted_model_runs_df
 
     else:
         st.warning("Please select a model to view the past 10 runs.")
 
 
-def plot_execution_time_chart(df: pd.DataFrame):
+def plot_execution_time_chart(df: pd.DataFrame, selected_run_id: int = None):
+
+    selected_run_id_str = str(selected_run_id)
     # Create a new DataFrame with the required columns
     chart_data = df[
-        ["runId", "executionTime", "resourceType", "status", "runGeneratedAt","materializedType"]
+        ["runId", "executionTime", "resourceType", "status", "runGeneratedAt", "materializedType"]
     ]
 
-    # Rename the columns for better readability
-    chart_data.columns = ["Run ID", "Execution Time", "Resource Type", "Status", "Run Generated At","Materialized Type"]
-
-    # Filter out negative execution times
-    chart_data = chart_data[chart_data["Execution Time"] >= 0]
+    # Convert the 'runGeneratedAt' column to datetime
+    chart_data['runGeneratedAt'] = pd.to_datetime(chart_data['runGeneratedAt'])
 
     # Create a bar chart using Plotly
     fig = px.bar(
         chart_data,
-        x="Run Generated At",
-        y="Execution Time",
-        color="Status",
-        text="Execution Time",
+        x="runGeneratedAt",
+        y="executionTime",
+        color="status",
+        text="executionTime",
         title="Execution Time by Run Generated At",
-        labels={"Execution Time": "Execution Time (s)"},
+        labels={"executionTime": "executionTime (s)"},
         height=400,
-        hover_data=["Run ID", "Materialized Type"]
+        hover_data=["runId", "materializedType"]
     )
 
     # Update the y-axis to start at 0
-    fig.update_yaxes(range=[0, chart_data["Execution Time"].max()])
+    fig.update_yaxes(range=[0, chart_data["executionTime"].max()])
+    fig.update_xaxes(type="date")
+
+    if selected_run_id is not None:
+        selected_row = chart_data.loc[chart_data["runId"] == selected_run_id_str]
+        print(f"selected_row: {selected_row}")
+        if not selected_row.empty:
+            x0 = selected_row["runGeneratedAt"].values[0] - pd.Timedelta(hours=1)
+            x1 = selected_row["runGeneratedAt"].values[0] + pd.Timedelta(hours=1)
+            y1 = selected_row["executionTime"].values[0]
+
+            fig.add_shape(
+                type="rect",
+                x0=x0,
+                x1=x1,
+                y0=0,
+                y1=y1,
+                yref="y",
+                xref="x",
+                line=dict(color="purple", width=2, dash="dot"),
+                fillcolor="purple",
+                opacity=0.5,
+            )
 
     # Display the chart in Streamlit
     st.plotly_chart(fig)
+
+
+
+def compare_selected_runs(model_runs_df: pd.DataFrame):
+    run_ids = [int(run_id) for run_id in model_runs_df["runId"]]
+    sorted_run_ids = sorted(run_ids)
+
+    min_index, max_index = 0, len(sorted_run_ids) - 1
+
+    selected_index = st.slider(
+        "Select Run ID to compare",
+        min_value=min_index,
+        max_value=max_index,
+        value=max_index,
+        format="%d",
+        key="compare_runs_slider",
+    )
+
+    # Retrieve the selected run ID based on the index
+    selected_run_id = sorted_run_ids[selected_index]
+    # print(selected_run_id)
+
+    # Call the plot_execution_time_chart function with the selected_run_id
+    plot_execution_time_chart(model_runs_df, selected_run_id)
 
 
 # Show code diff to compare any workbench iteration to any production cloud run iteration(in the future maybe anyone's iteration)
 # Use the code from the compare any 2 iterations widget to replicate
 # Show a code diff of the runId selected in the model past runs widget compared to the one selected based on the slider options
 # Show a diff in dbt_build_time vs. executionTime
-def compare_selected_runs(model_runs_df: pd.DataFrame):
-    run_ids = [int(run_id) for run_id in model_runs_df["runId"]]
-    sorted_run_ids = sorted(run_ids)  # Sort the list in ascending order
-
-    selected_indices = st.slider(
-        "Select Deployed Iterations to compare",
-        min_value=0,
-        max_value=len(sorted_run_ids) - 1,
-        value=len(sorted_run_ids) - 1,
-        format="%d",
-        key="compare_production_runs_slider",
-    )
-
 
 # Have hyperlinks to allow the user to easily navigate to the dbt Cloud UI for the selected model job run
 
