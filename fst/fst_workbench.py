@@ -740,6 +740,7 @@ def get_models_per_job_widget(is_required: bool = True, **kwargs):
 
 
 def get_model_past_runs_widget(is_required: bool = True, **kwargs):
+    #TODO: build select multiple options box to dynamically generate the columns in a dataframe
     fields = [
         "runId",
         "alias",
@@ -776,7 +777,7 @@ def get_model_past_runs_widget(is_required: bool = True, **kwargs):
         )
         # model_runs = list_to_dict(model_runs, id_field="runId", value_field="uniqueId")
         st.session_state.model_runs = model_runs
-        st.dataframe(model_runs)
+        st.dataframe(model_runs) #TODO: fix this dataframe to not format anything funky 
     else:
         st.warning("Please select a model to view past runs.")
 
