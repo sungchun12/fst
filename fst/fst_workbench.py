@@ -740,12 +740,62 @@ def get_models_per_job_widget(is_required: bool = True, **kwargs):
 
 
 def get_model_past_runs_widget(is_required: bool = True, **kwargs):
-    fields = [
+    all_fields = [
+    "runId",
+    "accountId",
+    "projectId",
+    "environmentId",
+    "jobId",
+    "resourceType",
+    "uniqueId",
+    "name",
+    "description",
+    "meta",
+    "dbtVersion",
+    "tags",
+    "database",
+    "schema",
+    "alias",
+    "invocationId",
+    "args",
+    "error",
+    "status",
+    "skip",
+    "compileStartedAt",
+    "compileCompletedAt",
+    "executeStartedAt",
+    "executeCompletedAt",
+    "executionTime",
+    "threadId",
+    "runGeneratedAt",
+    "runElapsedTime",
+    "dependsOn",
+    "packageName",
+    "type",
+    "owner",
+    "comment",
+    "childrenL1",
+    "rawSql",
+    "rawCode",
+    "compiledSql",
+    "compiledCode",
+    "language",
+    "materializedType",
+    "packages",
+    "columns",
+    "stats",
+    "runResults",
+    "parentsModels",
+    "parentsSources",
+    "tests",
+    "dbtGroup",
+    "access",
+]
+
+    default_fields = [
         "runId",
-        "alias",
         "executionTime",
         "resourceType",
-        "jobId",
         "database",
         "schema",
         "error",
@@ -769,7 +819,7 @@ def get_model_past_runs_widget(is_required: bool = True, **kwargs):
                 "get_model_by_environment",
                 environment_id=st.session_state.get("environment_id_number"),
                 unique_id=model_unique_id,
-                fields=fields,
+                fields=all_fields,
             )
             .get("data")
             .get("modelByEnvironment")
@@ -785,11 +835,16 @@ def get_model_past_runs_widget(is_required: bool = True, **kwargs):
             lambda x: f"{x:,.0f}".replace(",", "") if isinstance(x, int) else x
         )
 
-        # Display the DataFrame
-        st.dataframe(formatted_model_runs_df)
+        selected_fields = st.multiselect(
+            "Select fields to display in the DataFrame", all_fields, default=default_fields
+        )
+
+        # Display the DataFrame with the selected fields
+        st.dataframe(formatted_model_runs_df[selected_fields])
+
 
     else:
-        st.warning("Please select a model to view past runs.")
+        st.warning("Please select a model to view the past 10 runs.")
 
 
 # show a table of the past n runs of the model, show the view vs. table, success vs. failure
