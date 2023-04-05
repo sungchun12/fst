@@ -13,6 +13,7 @@ import sqlglot
 from requests.exceptions import ConnectionError
 from dbtc import dbtCloudClient
 from typing import Any, List
+
 # from gql import gql, Client
 # from gql.transport.requests import RequestsHTTPTransport
 
@@ -482,7 +483,7 @@ def dbt_cloud_workbench() -> None:
             dbt_cloud_service_token = get_service_token()
         with col2:
             dbt_cloud_host_url = get_host_url()
-        try: 
+        try:
             validate_service_token(dbt_cloud_service_token)
             col3, col4, col5, col6, col7 = st.columns(5)
             with col3:
@@ -497,9 +498,7 @@ def dbt_cloud_workbench() -> None:
                 get_run_widget()
             get_models_per_job_widget()
         except:
-            st.info(
-            "Enter a valid service token to get started!"
-        )
+            st.info("Enter a valid service token to get started!")
 
 
 def get_host_url() -> None:
@@ -523,6 +522,7 @@ def get_service_token() -> None:
         help="[Instructions to generate an API service token with permissions: ['Metadata Only', 'Job Admin']](https://docs.getdbt.com/docs/dbt-cloud-apis/service-tokens#generating-service-account-tokens)",
     )
     return session_state_key
+
 
 # @st.cache_data(show_spinner=False) #TODO: figure out how to make this more performant and not refresh everytime
 def validate_service_token(service_token: str) -> None:
@@ -637,6 +637,12 @@ def get_run_widget(is_required: bool = True, **kwargs):
     return session_state_key
 
 
+def update_job_id_number():
+    selected_job = st.session_state.job_id
+    job_id_number = st.session_state.jobs[selected_job]["id"]
+    st.session_state.job_id_number = job_id_number
+
+
 def get_job_widget(is_required: bool = True, **kwargs):
     jobs = dynamic_request(
         st.session_state.dbtc_client.cloud,
@@ -650,18 +656,13 @@ def get_job_widget(is_required: bool = True, **kwargs):
     if not is_required:
         options.insert(0, None)
     st.session_state.jobs = jobs
-    #TODO: fix this to store job id number in session state instead of a selectbox
-    st.selectbox(
-        label="Select Job ID",
-        options=options,
-        format_func=lambda x: jobs[x]["id"] if x is not None else x,
-        key="job_id_number",
-    )
+
     return st.selectbox(
         label="Select Job",
         options=options,
         format_func=lambda x: jobs[x]["name"] if x is not None else x,
         key="job_id",
+        on_change=update_job_id_number, 
     )
 
 
@@ -694,11 +695,15 @@ def list_to_dict(
 
 
 def get_models_per_job_widget(is_required: bool = True, **kwargs):
-    models = dynamic_request(
-        st.session_state.dbtc_client.metadata,
-        "get_models",
-        job_id=st.session_state.get("job_id_number"),
-    ).get("data", []).get("models", [])
+    models = (
+        dynamic_request(
+            st.session_state.dbtc_client.metadata,
+            "get_models",
+            job_id=st.session_state.get("job_id_number"),
+        )
+        .get("data", [])
+        .get("models", [])
+    )
     models = list_to_dict(models, id_field="uniqueId", value_field="uniqueId")
     options = list(models.keys())
     st.session_state.models = models
@@ -709,6 +714,7 @@ def get_models_per_job_widget(is_required: bool = True, **kwargs):
         key="model_id",
         help="Blank if no models found for this job",
     )
+
 
 # show a table of the past n runs of the model, show the view vs. table, success vs. failure
 # create a chart to show execution time over n production runs, show the view vs. table, success vs. failure
