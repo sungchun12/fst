@@ -839,15 +839,43 @@ def get_model_past_runs_widget(is_required: bool = True, **kwargs):
 
         # Display the DataFrame with the selected fields
         st.dataframe(formatted_model_runs_df[selected_fields])
+        plot_execution_time_chart(formatted_model_runs_df)
 
 
     else:
         st.warning("Please select a model to view the past 10 runs.")
 
 
-# show a table of the past n runs of the model, show the view vs. table, success vs. failure
-# create a chart to show execution time over n production runs, show the view vs. table, success vs. failure
-# default the input text box to 10 and allow the user to change it
+def plot_execution_time_chart(df: pd.DataFrame):
+    # Create a new DataFrame with the required columns
+    chart_data = df[
+        ["runId", "executionTime", "resourceType", "status", "runGeneratedAt","materializedType"]
+    ]
+
+    # Rename the columns for better readability
+    chart_data.columns = ["Run ID", "Execution Time", "Resource Type", "Status", "Run Generated At","Materialized Type"]
+
+    # Filter out negative execution times
+    chart_data = chart_data[chart_data["Execution Time"] >= 0]
+
+    # Create a bar chart using Plotly
+    fig = px.bar(
+        chart_data,
+        x="Run Generated At",
+        y="Execution Time",
+        color="Status",
+        text="Execution Time",
+        title="Execution Time by Run Generated At",
+        labels={"Execution Time": "Execution Time (s)"},
+        height=400,
+        hover_data=["Materialized Type"]
+    )
+
+    # Update the y-axis to start at 0
+    fig.update_yaxes(range=[0, chart_data["Execution Time"].max()])
+
+    # Display the chart in Streamlit
+    st.plotly_chart(fig)
 # Show code diff to compare any workbench iteration to any production cloud run iteration(in the future maybe anyone's iteration)
 
 # Have hyperlinks to allow the user to easily navigate to the dbt Cloud UI for the selected model job run
