@@ -791,11 +791,10 @@ def get_model_past_runs_widget(is_required: bool = True, **kwargs):
     default_fields = [
         "runId",
         "executionTime",
-        "resourceType",
         "database",
         "schema",
-        "error",
         "status",
+        "error",
         "language",
         "materializedType",
         "dbtVersion",
