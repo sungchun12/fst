@@ -65,6 +65,7 @@ class DataFrameHighlighter:
 
 
 def main() -> None:
+    st.set_page_config(layout="wide")
     metrics_df = fetch_metrics_data()
     dbt_cloud_workbench()
     display_query_section()
