@@ -875,8 +875,8 @@ def plot_execution_time_chart(df: pd.DataFrame, selected_run_id: int = None):
     if selected_run_id is not None:
         selected_row = chart_data.loc[chart_data["runId"] == selected_run_id_str]
         if not selected_row.empty:
-            x0 = selected_row["runGeneratedAt"].values[0] - pd.Timedelta(hours=1)
-            x1 = selected_row["runGeneratedAt"].values[0] + pd.Timedelta(hours=1)
+            x0 = selected_row["runGeneratedAt"].values[0] - pd.Timedelta(hours=4)
+            x1 = selected_row["runGeneratedAt"].values[0] + pd.Timedelta(hours=4)
             y1 = selected_row["executionTime"].values[0]
 
             fig.add_shape(
@@ -889,7 +889,7 @@ def plot_execution_time_chart(df: pd.DataFrame, selected_run_id: int = None):
                 xref="x",
                 line=dict(color="purple", width=2, dash="dot"),
                 fillcolor="purple",
-                opacity=0.5,
+                opacity=0.3,
             )
 
     # Display the chart in Streamlit
