@@ -484,21 +484,23 @@ def dbt_cloud_workbench() -> None:
             dbt_cloud_service_token = get_service_token()
         with col2:
             dbt_cloud_host_url = get_host_url()
-        try:
-            validate_service_token(dbt_cloud_service_token)
-            col3, col4, col5, col6 = st.columns(4)
-            with col3:
-                get_account_widget()
-            with col4:
-                get_project_widget()
-            with col5:
-                get_environment_widget()
-            with col6:
-                get_job_widget()
-            get_models_per_job_widget()
-            get_model_past_runs_widget()
-        except:
-            st.info("Enter a valid service token to get started!")
+        # try:
+        validate_service_token(dbt_cloud_service_token)
+        col3, col4, col5, col6 = st.columns(4)
+        with col3:
+            get_account_widget()
+        with col4:
+            get_project_widget()
+        with col5:
+            get_environment_widget()
+        with col6:
+            get_job_widget()
+        get_models_per_job_widget()
+        model_runs_df = get_model_past_runs_widget()
+        compare_selected_runs(model_runs_df)
+        # except Exception as e:
+        #     # st.info("Enter a valid service token to get started!")
+        #     print(e)
 
 
 def get_host_url() -> None:
@@ -837,7 +839,7 @@ def get_model_past_runs_widget(is_required: bool = True, **kwargs):
         # Display the DataFrame with the selected fields
         st.dataframe(formatted_model_runs_df[selected_fields])
         plot_execution_time_chart(formatted_model_runs_df)
-
+        return formatted_model_runs_df
 
     else:
         st.warning("Please select a model to view the past 10 runs.")
@@ -873,7 +875,25 @@ def plot_execution_time_chart(df: pd.DataFrame):
 
     # Display the chart in Streamlit
     st.plotly_chart(fig)
+
+
 # Show code diff to compare any workbench iteration to any production cloud run iteration(in the future maybe anyone's iteration)
+# Use the code from the compare any 2 iterations widget to replicate
+# Show a code diff of the runId selected in the model past runs widget compared to the one selected based on the slider options
+# Show a diff in dbt_build_time vs. executionTime
+def compare_selected_runs(model_runs_df: pd.DataFrame):
+    run_ids = [int(run_id) for run_id in model_runs_df["runId"]]
+    sorted_run_ids = sorted(run_ids)  # Sort the list in ascending order
+
+    selected_indices = st.slider(
+        "Select Run IDs to compare",
+        min_value=0,
+        max_value=len(sorted_run_ids) - 1,
+        value=(0, len(sorted_run_ids) - 1),
+        format="%d",
+        key="compare_runs_slider",
+    )
+
 
 # Have hyperlinks to allow the user to easily navigate to the dbt Cloud UI for the selected model job run
 
