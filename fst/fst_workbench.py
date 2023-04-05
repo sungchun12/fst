@@ -850,7 +850,7 @@ def plot_execution_time_chart(df: pd.DataFrame, selected_run_id: int = None):
     # Create a new DataFrame with the required columns
     chart_data = df[
         ["runId", "executionTime", "resourceType", "status", "runGeneratedAt", "materializedType"]
-    ]
+    ].copy()
 
     # Convert the 'runGeneratedAt' column to datetime
     chart_data['runGeneratedAt'] = pd.to_datetime(chart_data['runGeneratedAt'])
@@ -874,7 +874,6 @@ def plot_execution_time_chart(df: pd.DataFrame, selected_run_id: int = None):
 
     if selected_run_id is not None:
         selected_row = chart_data.loc[chart_data["runId"] == selected_run_id_str]
-        print(f"selected_row: {selected_row}")
         if not selected_row.empty:
             x0 = selected_row["runGeneratedAt"].values[0] - pd.Timedelta(hours=1)
             x1 = selected_row["runGeneratedAt"].values[0] + pd.Timedelta(hours=1)
