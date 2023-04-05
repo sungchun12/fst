@@ -486,7 +486,7 @@ def dbt_cloud_workbench() -> None:
             dbt_cloud_host_url = get_host_url()
         try:
             validate_service_token(dbt_cloud_service_token)
-            col3, col4, col5, col6, col7 = st.columns(5)
+            col3, col4, col5, col6 = st.columns(4)
             with col3:
                 get_account_widget()
             with col4:
@@ -495,8 +495,6 @@ def dbt_cloud_workbench() -> None:
                 get_environment_widget()
             with col6:
                 get_job_widget()
-            with col7:
-                get_run_widget()
             get_models_per_job_widget()
             get_model_past_runs_widget()
         except:
@@ -622,27 +620,27 @@ def get_environment_widget(is_required: bool = True, **kwargs):
     )
 
 
-def get_run_widget(is_required: bool = True, **kwargs):
-    session_state_key = "run_id"
-    runs = dynamic_request(
-        st.session_state.dbtc_client.cloud,
-        "list_runs",
-        st.session_state.account_id,
-        job_definition_id=st.session_state.get("job_id", None),
-        order_by="-id",
-        **kwargs,
-    ).get("data", [])
-    runs = list_to_dict(runs, value_field="id", reverse=True)
-    options = list(runs.keys())
-    if not is_required:
-        options.insert(0, None)
-    st.selectbox(
-        label="Select Run",
-        options=options,
-        format_func=lambda x: runs[x]["id"] if x is not None else x,
-        key=session_state_key,
-    )
-    return session_state_key
+# def get_run_widget(is_required: bool = True, **kwargs):
+#     session_state_key = "run_id"
+#     runs = dynamic_request(
+#         st.session_state.dbtc_client.cloud,
+#         "list_runs",
+#         st.session_state.account_id,
+#         job_definition_id=st.session_state.get("job_id", None),
+#         order_by="-id",
+#         **kwargs,
+#     ).get("data", [])
+#     runs = list_to_dict(runs, value_field="id", reverse=True)
+#     options = list(runs.keys())
+#     if not is_required:
+#         options.insert(0, None)
+#     st.selectbox(
+#         label="Select Run",
+#         options=options,
+#         format_func=lambda x: runs[x]["id"] if x is not None else x,
+#         key=session_state_key,
+#     )
+#     return session_state_key
 
 
 def update_job_id_number():
