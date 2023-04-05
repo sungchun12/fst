@@ -594,6 +594,11 @@ def get_project_widget(states: List[str] = [], is_required: bool = True):
     st.session_state.projects = projects
 
 
+def update_environment_id():
+    selected_environment = st.session_state.environment_id
+    environment_id = st.session_state.environments[selected_environment]["id"]
+    st.session_state.environment_id_number = environment_id
+
 def get_environment_widget(is_required: bool = True, **kwargs):
     environments = dynamic_request(
         st.session_state.dbtc_client.cloud,
@@ -607,11 +612,13 @@ def get_environment_widget(is_required: bool = True, **kwargs):
     if not is_required:
         options.insert(0, None)
     st.session_state.environments = environments
+
     return st.selectbox(
         label="Select Environment",
         options=options,
         format_func=lambda x: environments[x]["name"] if x is not None else x,
         key="environment_id",
+        on_change=update_environment_id, 
     )
 
 
@@ -695,6 +702,11 @@ def list_to_dict(
     return {}
 
 
+def update_model_unique_id():
+    selected_model = st.session_state.model_id
+    model_unique_id = st.session_state.models[selected_model]["uniqueId"]
+    st.session_state.model_unique_id = model_unique_id
+
 def get_models_per_job_widget(is_required: bool = True, **kwargs):
     models = (
         dynamic_request(
@@ -708,14 +720,26 @@ def get_models_per_job_widget(is_required: bool = True, **kwargs):
     models = list_to_dict(models, id_field="uniqueId", value_field="uniqueId")
     options = list(models.keys())
     st.session_state.models = models
+
     return st.selectbox(
         label="Select Model based on Job ID",
         options=options,
         format_func=lambda x: models[x]["name"] if x is not None else x,
         key="model_id",
         help="Blank if no models found for this job",
+        on_change=update_model_unique_id,  # Add the callback function here
     )
 
+# def get_n_runs_per_model(is_required: bool = True, **kwargs):
+#     n_runs = st.number_input(
+#         label="Number of Runs",
+#         value=10,
+#         min_value=1,
+#         max_value=50,
+#         step=1,
+#         key="n_runs",
+#     )
+#     return n_runs
 
 # show a table of the past n runs of the model, show the view vs. table, success vs. failure
 # create a chart to show execution time over n production runs, show the view vs. table, success vs. failure
