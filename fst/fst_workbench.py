@@ -498,6 +498,7 @@ def dbt_cloud_workbench() -> None:
             with col7:
                 get_run_widget()
             get_models_per_job_widget()
+            get_model_past_runs_widget()
         except:
             st.info("Enter a valid service token to get started!")
 
@@ -599,6 +600,7 @@ def update_environment_id():
     environment_id = st.session_state.environments[selected_environment]["id"]
     st.session_state.environment_id_number = environment_id
 
+
 def get_environment_widget(is_required: bool = True, **kwargs):
     environments = dynamic_request(
         st.session_state.dbtc_client.cloud,
@@ -618,7 +620,7 @@ def get_environment_widget(is_required: bool = True, **kwargs):
         options=options,
         format_func=lambda x: environments[x]["name"] if x is not None else x,
         key="environment_id",
-        on_change=update_environment_id, 
+        on_change=update_environment_id,
     )
 
 
@@ -670,7 +672,7 @@ def get_job_widget(is_required: bool = True, **kwargs):
         options=options,
         format_func=lambda x: jobs[x]["name"] if x is not None else x,
         key="job_id",
-        on_change=update_job_id_number, 
+        on_change=update_job_id_number,
     )
 
 
@@ -703,9 +705,15 @@ def list_to_dict(
 
 
 def update_model_unique_id():
-    selected_model = st.session_state.model_id
-    model_unique_id = st.session_state.models[selected_model]["uniqueId"]
-    st.session_state.model_unique_id = model_unique_id
+    selected_model = st.session_state.model_name
+    if selected_model is not None and st.session_state.models is not None:
+        for model in st.session_state.models.values():
+            if model["uniqueId"] == selected_model:
+                st.session_state.model_unique_id = model["uniqueId"]
+                break
+    else:
+        st.session_state.model_unique_id = "Not selected"
+
 
 def get_models_per_job_widget(is_required: bool = True, **kwargs):
     models = (
@@ -725,21 +733,53 @@ def get_models_per_job_widget(is_required: bool = True, **kwargs):
         label="Select Model based on Job ID",
         options=options,
         format_func=lambda x: models[x]["name"] if x is not None else x,
-        key="model_id",
+        key="model_name",
         help="Blank if no models found for this job",
-        on_change=update_model_unique_id,  # Add the callback function here
+        on_change=update_model_unique_id,
     )
 
-# def get_n_runs_per_model(is_required: bool = True, **kwargs):
-#     n_runs = st.number_input(
-#         label="Number of Runs",
-#         value=10,
-#         min_value=1,
-#         max_value=50,
-#         step=1,
-#         key="n_runs",
-#     )
-#     return n_runs
+
+def get_model_past_runs_widget(is_required: bool = True, **kwargs):
+    fields = [
+        "runId",
+        "alias",
+        "executionTime",
+        "resourceType",
+        "jobId",
+        "database",
+        "schema",
+        "error",
+        "status",
+        "language",
+        "materializedType",
+        "dbtVersion",
+        "rawCode",
+        "compiledCode",
+        "owner",
+        "tests",
+        "dbtGroup",
+        "access",
+    ]
+
+    model_unique_id = st.session_state.get("model_unique_id")
+    if model_unique_id is not None:
+        model_runs = (
+            dynamic_request(
+                st.session_state.dbtc_client.metadata,
+                "get_model_by_environment",
+                environment_id=st.session_state.get("environment_id_number"),
+                unique_id=model_unique_id,
+                fields=fields,
+            )
+            .get("data")
+            .get("modelByEnvironment")
+        )
+        # model_runs = list_to_dict(model_runs, id_field="runId", value_field="uniqueId")
+        st.session_state.model_runs = model_runs
+        st.dataframe(model_runs)
+    else:
+        st.warning("Please select a model to view past runs.")
+
 
 # show a table of the past n runs of the model, show the view vs. table, success vs. failure
 # create a chart to show execution time over n production runs, show the view vs. table, success vs. failure
