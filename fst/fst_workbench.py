@@ -484,23 +484,24 @@ def dbt_cloud_workbench() -> None:
             dbt_cloud_service_token = get_service_token()
         with col2:
             dbt_cloud_host_url = get_host_url()
-        # try:
-        validate_service_token(dbt_cloud_service_token)
-        col3, col4, col5, col6 = st.columns(4)
-        with col3:
-            get_account_widget()
-        with col4:
-            get_project_widget()
-        with col5:
-            get_environment_widget()
-        with col6:
-            get_job_widget()
-        get_models_per_job_widget()
-        model_runs_df = get_model_past_runs_widget()
-        compare_selected_runs(model_runs_df)
-        # except Exception as e:
-        #     # st.info("Enter a valid service token to get started!")
-        #     print(e)
+        try:
+            validate_service_token(dbt_cloud_service_token)
+            col3, col4, col5, col6 = st.columns(4)
+            with col3:
+                get_account_widget()
+            with col4:
+                get_project_widget()
+            with col5:
+                get_environment_widget()
+            with col6:
+                get_job_widget()
+            get_models_per_job_widget()
+            model_runs_df = get_model_past_runs_widget()
+            compare_selected_runs(model_runs_df)
+        except AttributeError:
+            st.info("Enter a valid service token to get started!")
+        except Exception:
+            st.info("Enter a valid service token to get started and pick a valid environment and job to view past 10 runs!")
 
 
 def get_host_url() -> None:
