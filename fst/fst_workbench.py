@@ -497,14 +497,14 @@ def dbt_cloud_workbench() -> None:
                 get_job_widget()
             get_models_per_job_widget()
             model_runs_df = get_model_past_runs_widget()
-            compare_selected_runs(model_runs_df)
+            selected_run_id = compare_selected_runs(model_runs_df)
         except AttributeError:
             st.info("Enter a valid service token to get started!")
         except Exception:
             st.info("Enter a valid service token to get started and pick a valid environment and job to view past 10 runs!")
         # Call the function
         metrics_df = fetch_metrics_data()
-        compare_dev_to_deployed(metrics_df, model_runs_df)
+        compare_dev_to_deployed(metrics_df, model_runs_df, selected_run_id)
 
 
 def get_host_url() -> None:
@@ -925,10 +925,11 @@ def compare_selected_runs(model_runs_df: pd.DataFrame):
 
     # Call the plot_execution_time_chart function with the selected_run_id
     plot_execution_time_chart(model_runs_df, selected_run_id)
+    return selected_run_id
 
 # create a function to read from fst_metrics.duckdb and create a dataframe specific to any modified model and compare it to the rawCode and compiled code in the model_runs_df
 # step 1 read in the fst_metrics.duckdb doing select * from metrics
-def compare_dev_to_deployed(metrics_df: pd.DataFrame, model_runs_df: pd.DataFrame):
+def compare_dev_to_deployed(metrics_df: pd.DataFrame, model_runs_df: pd.DataFrame, selected_run_id: int):
     # Step 1: Create a selectbox that shows all the models that have been modified
     model_options = metrics_df["modified_sql_file"].unique()
     selected_dev_model_to_compare = st.selectbox(
