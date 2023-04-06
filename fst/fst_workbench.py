@@ -933,23 +933,20 @@ def compare_dev_to_deployed(metrics_df: pd.DataFrame, model_runs_df: pd.DataFram
     # Step 1: Create a selectbox that shows all the models that have been modified
     model_options = metrics_df["modified_sql_file"].unique()
     selected_dev_model_to_compare = st.selectbox(
-        "**Focus on a dbt model to work on:**",
+        "**Focus on a dbt model to compare to a deployed dbt model:**",
         options=model_options,
         index=0,
         help="Only models that have been modified at least once are shown here with the full file path",
         key='selected_dev_model_to_compare'
     )
 
-    # Step 2: Use view_code_diffs to compare the compiledCode from the model_runs_df to the compiled_query from the metrics_df
     dev_code_row = metrics_df[metrics_df["modified_sql_file"] == selected_dev_model_to_compare].iloc[0]
-    dev_code = dev_code_row["compiled_query"]
+    dev_code = str(dev_code_row["compiled_query"])
 
     # Assuming that model_runs_df has a column named 'compiledCode' containing the deployed code
-    deployed_model_name = st.session_state.get("model_unique_id")
-    # Find the deployed_code_row in the model_runs_df
-    deployed_code_row = model_runs_df[model_runs_df["uniqueId"] == deployed_model_name].iloc[0]
+    filtered_model_runs_df = model_runs_df[model_runs_df["runId"] == str(selected_run_id)]
 
-    deployed_code = deployed_code_row["compiledCode"]
+    deployed_code = ' '.join(filtered_model_runs_df['compiledCode'])
 
     view_code_diffs(dev_code, deployed_code, key="compare_dev_to_deployed")
 
