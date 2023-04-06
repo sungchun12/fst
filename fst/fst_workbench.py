@@ -502,6 +502,9 @@ def dbt_cloud_workbench() -> None:
             st.info("Enter a valid service token to get started!")
         except Exception:
             st.info("Enter a valid service token to get started and pick a valid environment and job to view past 10 runs!")
+        # Call the function
+        metrics_df = fetch_metrics_data()
+        compare_dev_to_deployed(metrics_df, model_runs_df)
 
 
 def get_host_url() -> None:
@@ -704,7 +707,7 @@ def list_to_dict(
 
 
 def update_model_unique_id():
-    selected_model = st.session_state.model_name
+    selected_model = st.session_state.deployed_model_name
     if selected_model is not None and st.session_state.models is not None:
         for model in st.session_state.models.values():
             if model["uniqueId"] == selected_model:
@@ -732,7 +735,7 @@ def get_models_per_job_widget(is_required: bool = True, **kwargs):
         label="Select Model based on Job ID",
         options=options,
         format_func=lambda x: models[x]["name"] if x is not None else x,
-        key="model_name",
+        key="deployed_model_name",
         help="Blank if no models found for this job",
         on_change=update_model_unique_id,
     )
@@ -922,6 +925,33 @@ def compare_selected_runs(model_runs_df: pd.DataFrame):
 
     # Call the plot_execution_time_chart function with the selected_run_id
     plot_execution_time_chart(model_runs_df, selected_run_id)
+
+# create a function to read from fst_metrics.duckdb and create a dataframe specific to any modified model and compare it to the rawCode and compiled code in the model_runs_df
+# step 1 read in the fst_metrics.duckdb doing select * from metrics
+def compare_dev_to_deployed(metrics_df: pd.DataFrame, model_runs_df: pd.DataFrame):
+    # Step 1: Create a selectbox that shows all the models that have been modified
+    model_options = metrics_df["modified_sql_file"].unique()
+    selected_dev_model_to_compare = st.selectbox(
+        "**Focus on a dbt model to work on:**",
+        options=model_options,
+        index=0,
+        help="Only models that have been modified at least once are shown here with the full file path",
+        key='selected_dev_model_to_compare'
+    )
+
+    # Step 2: Use view_code_diffs to compare the compiledCode from the model_runs_df to the compiled_query from the metrics_df
+    dev_code_row = metrics_df[metrics_df["modified_sql_file"] == selected_dev_model_to_compare].iloc[0]
+    dev_code = dev_code_row["compiled_query"]
+
+    # Assuming that model_runs_df has a column named 'compiledCode' containing the deployed code
+    deployed_model_name = st.session_state.get("model_unique_id")
+    # Find the deployed_code_row in the model_runs_df
+    deployed_code_row = model_runs_df[model_runs_df["uniqueId"] == deployed_model_name].iloc[0]
+
+    deployed_code = deployed_code_row["compiledCode"]
+
+    view_code_diffs(dev_code, deployed_code, key="compare_dev_to_deployed")
+
 
 
 # Show code diff to compare any workbench iteration to any production cloud run iteration(in the future maybe anyone's iteration)
