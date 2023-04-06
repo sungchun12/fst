@@ -946,7 +946,7 @@ def compare_dev_to_deployed(metrics_df: pd.DataFrame, model_runs_df: pd.DataFram
     # Assuming that model_runs_df has a column named 'compiledCode' containing the deployed code
     filtered_model_runs_df = model_runs_df[model_runs_df["runId"] == str(selected_run_id)]
 
-    deployed_code = ' '.join(filtered_model_runs_df['compiledCode'])
+    deployed_code = ''.join(filtered_model_runs_df['compiledCode'])
 
     view_code_diffs(dev_code, deployed_code, key="compare_dev_to_deployed")
 
