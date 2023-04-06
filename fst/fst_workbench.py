@@ -855,6 +855,8 @@ def plot_execution_time_chart(df: pd.DataFrame, selected_run_id: int = None):
     # Convert the 'runGeneratedAt' column to datetime
     chart_data['runGeneratedAt'] = pd.to_datetime(chart_data['runGeneratedAt'])
 
+    status_colors = {"success": "#AEC6CF", "failure": "#FF6961"}
+
     # Create a bar chart using Plotly
     fig = px.bar(
         chart_data,
@@ -865,7 +867,8 @@ def plot_execution_time_chart(df: pd.DataFrame, selected_run_id: int = None):
         title="Execution Time by Run Generated At",
         labels={"executionTime": "executionTime (s)"},
         height=400,
-        hover_data=["runId", "materializedType"]
+        hover_data=["runId", "materializedType"],
+        color_discrete_map=status_colors  # Add this line to use custom colors
     )
 
     # Update the y-axis to start at 0
@@ -889,7 +892,7 @@ def plot_execution_time_chart(df: pd.DataFrame, selected_run_id: int = None):
                 xref="x",
                 line=dict(color="purple", width=2, dash="dot"),
                 fillcolor="purple",
-                opacity=0.3,
+                opacity=0.2,
             )
 
     # Display the chart in Streamlit
