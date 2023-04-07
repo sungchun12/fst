@@ -27,6 +27,7 @@ setup(
         "sqlglot",
         "dbtc",
         "data-diff",
-        "sqeleton",
+        "pyarrow==10.0.0",
+        "sqeleton[snowflake]"
     ],
 )

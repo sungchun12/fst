@@ -3,7 +3,7 @@ import os
 import logging
 logging.basicConfig(level=logging.INFO)
 
-from data_diff import connect_to_table, diff_tables, connect
+from data_diff import connect_to_table, diff_tables
 
 SNOWFLAKE_CONN_INFO = {
     "driver": "snowflake",
