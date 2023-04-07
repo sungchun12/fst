@@ -17,6 +17,19 @@ SNOWFLAKE_CONN_INFO = {
     "password": os.environ["SNOWFLAKE_PASSWORD"],
 }
 
+DUCKDB_CONN_INFO = {"driver": "duckdb", "filepath": "jaffle_shop.duckdb"}
+connect(DUCKDB_CONN_INFO)
+
+table_a = connect_to_table(DUCKDB_CONN_INFO, "new_file", "customer_id")
+table_b = connect_to_table(DUCKDB_CONN_INFO, "customers", "customer_id")
+
+diffed_tables = list(
+    diff_tables(
+        table_a, table_b
+    )
+)
+
+
 materialized_table = connect(SNOWFLAKE_CONN_INFO).parse_table_name("test_datadiff")
 # capitalization matters for these table names
 
