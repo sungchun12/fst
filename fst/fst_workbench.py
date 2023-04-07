@@ -498,14 +498,14 @@ def dbt_cloud_workbench() -> None:
             get_models_per_job_widget()
             model_runs_df = get_model_past_runs_widget()
             selected_run_id = compare_selected_runs(model_runs_df)
+            metrics_df = fetch_metrics_data()
+            compare_dev_to_deployed(metrics_df, model_runs_df, selected_run_id)
         except AttributeError:
             st.info("Enter a valid service token to get started!")
+        except UnboundLocalError: 
+            st.info("Pick an environment with at least 1 job run!")
         except Exception:
-            st.info("Enter a valid service token to get started and pick a valid environment and job to view past 10 runs!")
-        # Call the function
-        metrics_df = fetch_metrics_data()
-        compare_dev_to_deployed(metrics_df, model_runs_df, selected_run_id)
-
+            st.info("Pick a valid environment(not IDE development) and job to view past 10 runs!")
 
 def get_host_url() -> None:
     session_state_key = "dbt_cloud_host_url"
@@ -951,8 +951,6 @@ def compare_dev_to_deployed(metrics_df: pd.DataFrame, model_runs_df: pd.DataFram
     view_code_diffs(dev_code, deployed_code, key="compare_dev_to_deployed")
 
 
-
-# Show code diff to compare any workbench iteration to any production cloud run iteration(in the future maybe anyone's iteration)
 # Use the code from the compare any 2 iterations widget to replicate
 # Show a code diff of the runId selected in the model past runs widget compared to the one selected based on the slider options
 # Show a diff in dbt_build_time vs. executionTime
