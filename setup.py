@@ -29,5 +29,6 @@ setup(
         "data-diff",
         "pyarrow==10.0.0",
         "sqeleton[snowflake]"
+        "dbt-duckdb",
     ],
 )
