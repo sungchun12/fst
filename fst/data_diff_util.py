@@ -30,3 +30,7 @@ table2 = connect_to_table(SNOWFLAKE_CONN_INFO, "FCT_ORDERS", "ORDER_KEY")
 
 diffed_tables = list(diff_tables(table1, table2, extra_columns=("ORDER_DATE","GROSS_ITEM_SALES_AMOUNT")))
 print(diffed_tables[0:5])
+
+# materialize the table
+# copy and paste the SQL logic from this video:https://www.loom.com/share/682e4b7d74e84eb4824b983311f0a3b2?t=191
+# materialize that table
