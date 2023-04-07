@@ -933,7 +933,7 @@ def compare_dev_to_deployed(metrics_df: pd.DataFrame, model_runs_df: pd.DataFram
     # Step 1: Create a selectbox that shows all the models that have been modified
     model_options = metrics_df["modified_sql_file"].unique()
     selected_dev_model_to_compare = st.selectbox(
-        "**Focus on a dbt model to compare to a deployed dbt model:**",
+        "**Focus on a development dbt model to compare to a deployed dbt model:**",
         options=model_options,
         index=0,
         help="Only models that have been modified at least once are shown here with the full file path",
