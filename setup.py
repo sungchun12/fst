@@ -26,5 +26,7 @@ setup(
         "streamlit-diff-viewer==0.0.2",
         "sqlglot",
         "dbtc",
+        "data-diff",
+        "sqeleton",
     ],
 )
