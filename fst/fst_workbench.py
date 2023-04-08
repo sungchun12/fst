@@ -948,7 +948,7 @@ def compare_dev_to_deployed(metrics_df: pd.DataFrame, model_runs_df: pd.DataFram
 
     deployed_code = ''.join(filtered_model_runs_df['compiledCode'])
 
-    view_code_diffs(dev_code, deployed_code, key="compare_dev_to_deployed")
+    view_code_diffs(deployed_code, dev_code, key="compare_dev_to_deployed")
 
 
 # Use the code from the compare any 2 iterations widget to replicate
