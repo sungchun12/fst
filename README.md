@@ -1,9 +1,7 @@
 <p align="center">
-  <img src="./images/logo.jpeg" alt="fst: flow state tool]">
+  <img src="./images/fst_logo.png" alt="fst: flow state tool]">
 </p>
 
-
-# fst
 
 **fst: flow state tool**
 
