@@ -11,7 +11,6 @@ from fst.logger import setup_logger
 from fst.config_defaults import CURRENT_WORKING_DIR, CONFIG
 
 
-logger = logging.getLogger(__name__)
 
 @click.group()
 def main() -> None:
