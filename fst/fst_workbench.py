@@ -67,10 +67,13 @@ class DataFrameHighlighter:
 def main() -> None:
     st.set_page_config(layout="wide")
     metrics_df = fetch_metrics_data()
+    filtered_metrics_df, selected_row = show_metrics(metrics_df)
+    compare_two_iterations(filtered_metrics_df)
+    show_compiled_code_latest(selected_row)
+    show_compiled_code_selected(selected_row)
     dbt_cloud_workbench()
     display_query_section()
-    # transpile_sql_util() # TODO add this back in if it's useful
-    show_metrics(metrics_df)
+    transpile_sql_util() # TODO add this back in if it's useful
 
 
 def fetch_metrics_data() -> pd.DataFrame:
@@ -137,64 +140,65 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
     sorted_metrics_df = metrics_df.sort_values(by="timestamp", ascending=True)
 
     model_options = sorted_metrics_df["modified_sql_file"].unique()
-    selected_model = st.selectbox(
-        "**Focus on a dbt model to work on:**",
-        options=model_options,
-        index=0,
-        help="Only models that have been modified at least once are shown here with the full file path",
+    expander_single_dbt_model = st.expander(
+        "**Let's get into the flow of things!**", expanded=True
     )
+    with expander_single_dbt_model:
+        selected_model = st.selectbox(
+            "**Focus on a dbt model to work on:**",
+            options=model_options,
+            index=0,
+            help="Only models that have been modified at least once are shown here with the full file path",
+        )
 
-    filtered_metrics_df = sorted_metrics_df.loc[
-        sorted_metrics_df["modified_sql_file"] == selected_model
-    ].copy()
-    filtered_metrics_df = filtered_metrics_df.reset_index()
+        filtered_metrics_df = sorted_metrics_df.loc[
+            sorted_metrics_df["modified_sql_file"] == selected_model
+        ].copy()
+        filtered_metrics_df = filtered_metrics_df.reset_index()
 
-    iteration_options = filtered_metrics_df["timestamp"].tolist()
-    num_iterations = len(iteration_options)
-    if len(iteration_options) > 0:
-        if num_iterations > 1:
-            min_iteration_index = 0
-            max_iteration_index = num_iterations - 1
-            slider_label = "**Move the slider left to right viewing model changes in code/data/performance compared to the latest iteration:**"
+        iteration_options = filtered_metrics_df["timestamp"].tolist()
+        num_iterations = len(iteration_options)
+        if len(iteration_options) > 0:
+            if num_iterations > 1:
+                min_iteration_index = 0
+                max_iteration_index = num_iterations - 1
+                slider_label = "**Move the slider left to right viewing model changes in code/data/performance compared to the latest iteration:**"
 
-            selected_iteration_index = st.slider(
-                slider_label,
-                min_value=min_iteration_index,
-                max_value=max_iteration_index,
-                value=max_iteration_index,
-                format="%d",
-                help="The slider starts at zero and adds options for this model as you modify it",
+                selected_iteration_index = st.slider(
+                    slider_label,
+                    min_value=min_iteration_index,
+                    max_value=max_iteration_index,
+                    value=max_iteration_index,
+                    format="%d",
+                    help="The slider starts at zero and adds options for this model as you modify it",
+                )
+
+                selected_iteration = iteration_options[selected_iteration_index]
+            else:
+                selected_iteration = iteration_options[0]
+                st.write("*No Slider Options: There is only one iteration available*")
+
+            selected_row = filtered_metrics_df.loc[
+                filtered_metrics_df["timestamp"] == selected_iteration
+            ].iloc[0]
+            selected_iteration_index = filtered_metrics_df.index[
+                filtered_metrics_df["timestamp"] == selected_iteration
+            ].tolist()[0]
+
+            old_code = selected_row["compiled_query"]
+            with open(selected_row["compiled_sql_file"], "r") as f:
+                latest_code = f.read()
+            selected_timestamp(selected_iteration)
+            show_selected_data_preview(selected_row)
+            view_code_diffs(old_code, latest_code, key="compare_old_latest")
+            show_performance_metrics(
+                selected_row, sorted_metrics_df, selected_iteration_index
             )
-
-            selected_iteration = iteration_options[selected_iteration_index]
         else:
-            selected_iteration = iteration_options[0]
-            st.write("*No Slider Options: There is only one iteration available*")
-
-        selected_row = filtered_metrics_df.loc[
-            filtered_metrics_df["timestamp"] == selected_iteration
-        ].iloc[0]
-        selected_iteration_index = filtered_metrics_df.index[
-            filtered_metrics_df["timestamp"] == selected_iteration
-        ].tolist()[0]
-
-        old_code = selected_row["compiled_query"]
-        with open(selected_row["compiled_sql_file"], "r") as f:
-            latest_code = f.read()
-
-        selected_timestamp(selected_iteration)
-        show_selected_data_preview(selected_row)
-        view_code_diffs(old_code, latest_code, key="compare_old_latest")
-        compare_two_iterations(filtered_metrics_df)
-        show_performance_metrics(
-            selected_row, sorted_metrics_df, selected_iteration_index
-        )
-        show_compiled_code_latest(selected_row)
-        show_compiled_code_selected(selected_row)
-    else:
-        st.warning(
-            "No iterations found for any dbt models. Modify a dbt model to see results here."
-        )
+            st.warning(
+                "No iterations found for any dbt models. Modify a dbt model to see results here."
+            )
+    return filtered_metrics_df, selected_row
 
 
 def selected_timestamp(selected_iteration: pd.Series) -> None:
