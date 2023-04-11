@@ -73,7 +73,7 @@ def main() -> None:
     show_compiled_code_selected(selected_row)
     dbt_cloud_workbench()
     display_query_section()
-    transpile_sql_util() # TODO add this back in if it's useful
+    # transpile_sql_util() # TODO add this back in if it's useful
 
 
 def fetch_metrics_data() -> pd.DataFrame:
