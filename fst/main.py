@@ -53,7 +53,7 @@ def listener_process(queue: multiprocessing.Queue) -> None:
     "--preview-limit",
     default=CONFIG["PREVIEW_LIMIT_ROWS"],
     type=int,
-    help="Set the number of rows to preview in the UI. Defaults to 5.",
+    help="Set the number of rows to preview in the terminal and copilot UI. Defaults to 5.",
 )
 def start(path: str, preview_limit: int) -> None:
     CONFIG["PREVIEW_LIMIT_ROWS"] = preview_limit
