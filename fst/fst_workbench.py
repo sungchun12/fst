@@ -347,7 +347,7 @@ def show_compiled_code_latest(selected_row: pd.Series) -> None:
 
         with open(selected_row["compiled_sql_file"], "r") as f:
             compiled_sql_file_contents = f.read()
-        st.code(compiled_sql_file_contents, language="sql", line_numbers=True)
+        st.code(compiled_sql_file_contents, language="sql")
 
 
 def show_compiled_code_selected(selected_row: pd.Series) -> None:
@@ -360,7 +360,7 @@ def show_compiled_code_selected(selected_row: pd.Series) -> None:
     )
     with expander:
         compiled_query = selected_row["compiled_query"]
-        st.code(compiled_query, language="sql", line_numbers=True)
+        st.code(compiled_query, language="sql")
 
 
 def view_code_diffs(old_code: str, new_code: str, key: str = None) -> None:
@@ -422,7 +422,7 @@ def transpile_sql_util() -> None:
                 )[0]
 
                 # Display the transpiled SQL
-                st.code(transpiled_sql, language="sql", line_numbers=True)
+                st.code(transpiled_sql, language="sql")
             except Exception as e:
                 st.error(f"Error: {e}")
 
