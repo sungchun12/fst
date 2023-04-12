@@ -28,7 +28,7 @@ setup(
         "dbtc",
         "data-diff",
         "pyarrow==10.0.0",
-        "sqeleton[snowflake]"
+        "sqeleton[snowflake]",
         "dbt-duckdb",
     ],
 )
