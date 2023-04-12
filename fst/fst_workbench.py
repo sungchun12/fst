@@ -63,9 +63,13 @@ class DataFrameHighlighter:
 
         return self.dataframe.style.apply(column_style, axis=0)
 
+def get_fst_header_info() -> None:
+    col1, col2, col3 = st.columns(3)
+    col2.image("../images/fst_logo.png", use_column_width='auto')
 
 def main() -> None:
     st.set_page_config(layout="wide")
+    get_fst_header_info()
     metrics_df = fetch_metrics_data()
     filtered_metrics_df, selected_row = show_metrics(metrics_df)
     compare_two_iterations(filtered_metrics_df)
