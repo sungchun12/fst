@@ -126,6 +126,9 @@ def handle_query(query, file_path):
                                 "`dbt test` with generated tests was successful."
                             )
                             logger.info(result_rerun.stdout)
+                        else:
+                            logger.error("Error running `dbt test`:")
+                            logger.error(result_rerun.stdout)
                     else:
                         logger.error("Couldn't find the generated test YAML file.")
 
