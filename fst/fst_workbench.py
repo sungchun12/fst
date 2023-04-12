@@ -71,13 +71,16 @@ def main() -> None:
     st.set_page_config(layout="wide")
     get_fst_header_info()
     metrics_df = fetch_metrics_data()
-    filtered_metrics_df, selected_row = show_metrics(metrics_df)
-    compare_two_iterations(filtered_metrics_df)
-    show_compiled_code_latest(selected_row)
-    show_compiled_code_selected(selected_row)
-    dbt_cloud_workbench()
-    display_query_section()
-    # transpile_sql_util() # TODO add this back in if it's useful
+    if metrics_df.empty:
+        st.info("Modify a dbt SQL model to see the fst workbench")
+    else: 
+        filtered_metrics_df, selected_row = show_metrics(metrics_df)
+        compare_two_iterations(filtered_metrics_df)
+        show_compiled_code_latest(selected_row)
+        show_compiled_code_selected(selected_row)
+        dbt_cloud_workbench()
+        display_query_section()
+        # transpile_sql_util() # TODO add this back in if it's useful
 
 
 def fetch_metrics_data() -> pd.DataFrame:
