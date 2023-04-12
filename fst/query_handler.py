@@ -111,23 +111,27 @@ def handle_query(query, file_path):
                     )
 
                     # Verify if the newly generated test YAML file exists
-                    if os.path.isfile(test_yaml_path):
-                        logger.warning(test_yaml_path_warning_message)
-                        logger.warning(
-                            "Running `dbt test` with the generated test YAML file..."
+                if os.path.isfile(test_yaml_path):
+                    logger.warning(test_yaml_path_warning_message)
+                    logger.warning(
+                        "Running `dbt test` with the generated test YAML file..."
+                    )
+                    result_rerun = subprocess.run(
+                        ["dbt", "test", "--select", model_name, "--store-failures"],
+                        capture_output=True,
+                        text=True,
+                    )
+                    full_output = result_rerun.stdout + result_rerun.stderr
+                    if result_rerun.returncode == 0:
+                        logger.info(
+                            "`dbt test` with generated tests was successful."
                         )
-                        result_rerun = subprocess.run(
-                            ["dbt", "test", "--select", model_name, "--store-failures"],
-                            capture_output=True,
-                            text=True,
-                        )
-                        if result_rerun.returncode == 0:
-                            logger.info(
-                                "`dbt test` with generated tests was successful."
-                            )
-                            logger.info(result_rerun.stdout)
+                        logger.info(full_output)
                     else:
-                        logger.error("Couldn't find the generated test YAML file.")
+                        logger.error("Error running `dbt test`:")
+                        logger.error(full_output)
+                else:
+                    logger.error("Couldn't find the generated test YAML file.")
 
             compiled_sql_file = find_compiled_sql_file(file_path)
             if compiled_sql_file:
@@ -166,38 +170,43 @@ def handle_query(query, file_path):
             # Use the custom DateEncoder to handle date objects
             result_preview_json = json.dumps(result_preview_dict, cls=DateEncoder)
             current_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
+            
+            try:
+                duckdb_conn = duckdb.connect("fst_metrics.duckdb")
+                duckdb_conn.execute(
+                    """
+                    INSERT INTO metrics (
+                        timestamp,
+                        modified_sql_file,
+                        compiled_sql_file,
+                        compiled_query,
+                        dbt_build_status,
+                        duckdb_file_name,
+                        dbt_build_time,
+                        query_time,
+                        result_preview_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                    (
+                        current_timestamp,
+                        active_file,
+                        compiled_sql_file,
+                        compiled_query,
+                        dbt_build_status,
+                        duckdb_file_path,
+                        compile_time,
+                        query_time,
+                        result_preview_json,
+                    ),
+                )
 
-            duckdb_conn = duckdb.connect("fst_metrics.duckdb")
-            duckdb_conn.execute(
-                """
-                INSERT INTO metrics (
-                    timestamp,
-                    modified_sql_file,
-                    compiled_sql_file,
-                    compiled_query,
-                    dbt_build_status,
-                    duckdb_file_name,
-                    dbt_build_time,
-                    query_time,
-                    result_preview_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-                (
-                    current_timestamp,
-                    active_file,
-                    compiled_sql_file,
-                    compiled_query,
-                    dbt_build_status,
-                    duckdb_file_path,
-                    compile_time,
-                    query_time,
-                    result_preview_json,
-                ),
-            )
-
-            duckdb_conn.commit()
-            duckdb_conn.close()
-            logger.info("fst metrics saved to the database: fst_metrics.duckdb")
+                duckdb_conn.commit()
+            except Exception as e:
+                duckdb_conn.rollback()
+                logger.error(f"Error while inserting data into fst_metrics.duckdb: {e}")
+            finally:
+                duckdb_conn.close()
+                logger.info("fst metrics saved to the database: fst_metrics.duckdb")
 
         except Exception as e:
             logger.error(f"Error: {e}")
