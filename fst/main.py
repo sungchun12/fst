@@ -8,8 +8,7 @@ from fst.file_utils import get_models_directory
 from fst.query_handler import handle_query, DynamicQueryHandler
 from fst.directory_watcher import watch_directory
 from fst.logger import setup_logger
-from fst.config_defaults import CURRENT_WORKING_DIR, CONFIG
-
+from fst.config_defaults import CURRENT_WORKING_DIR
 
 
 @click.group()
@@ -50,12 +49,11 @@ def listener_process(queue: multiprocessing.Queue) -> None:
 )
 @click.option(
     "--preview-limit",
-    default=CONFIG["PREVIEW_LIMIT_ROWS"],
+    default=5,
     type=int,
     help="Set the number of rows to preview in the terminal and copilot UI. Defaults to 5.",
 )
 def start(path: str, preview_limit: int) -> None:
-    CONFIG["PREVIEW_LIMIT_ROWS"] = preview_limit
     log_queue = multiprocessing.Queue()
     dir_watcher_process = multiprocessing.Process(
         target=start_directory_watcher, args=(path, log_queue)
