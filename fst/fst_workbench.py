@@ -110,7 +110,7 @@ def display_query_section() -> None:
     )
 
     expander = st.expander(
-        "**Run ad hoc SQL queries against your development database**"
+        "**Ad Hoc SQL Editor**"
     )
     with expander:
         query = streamlit_ace.st_ace(
@@ -145,7 +145,7 @@ def show_metrics(metrics_df: pd.DataFrame) -> None:
 
     model_options = sorted_metrics_df["modified_sql_file"].unique()
     expander_single_dbt_model = st.expander(
-        "**Let's get into the flow of things!**", expanded=True
+        "**Iterate your dbt models!**", expanded=True
     )
     with expander_single_dbt_model:
         selected_model = st.selectbox(
@@ -340,7 +340,7 @@ def show_compiled_code_latest(selected_row: pd.Series) -> None:
     show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 
     expander = st.expander(
-        "**Show latest compiled code for focused on dbt model**", expanded=show_code
+        "**Latest Compiled Code**", expanded=show_code
     )
     with expander:
         st.code(f"{selected_row['compiled_sql_file']}", language="text")
@@ -355,7 +355,7 @@ def show_compiled_code_selected(selected_row: pd.Series) -> None:
     show_code = query_params.get("show_code", ["False"])[0].lower() == "true"
 
     expander = st.expander(
-        "**Show compiled code for the dbt model slider option selected**",
+        "**Compiled Code for Selected Iteration**",
         expanded=show_code,
     )
     with expander:
@@ -429,7 +429,7 @@ def transpile_sql_util() -> None:
 
 def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
     expander = st.expander(
-        "**Compare any 2 iterations side by side for the dbt model in focus**"
+        "**Compare Iterations**"
     )
     with expander:
         iterations = filtered_metrics_df["timestamp"].tolist()
@@ -484,7 +484,7 @@ def compare_two_iterations(filtered_metrics_df: pd.DataFrame) -> None:
 # an expander: "Unleash your potential"
 def dbt_cloud_workbench() -> None:
     expander = st.expander(
-        "**Unleash your potential: Compare your work to Production**"
+        "**Compare to Production**"
     )
     with expander:
         col1, col2 = st.columns(2)
