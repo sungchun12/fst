@@ -57,6 +57,10 @@ source venv/bin/activate
 pip install -r requirements.txt # installs the dbt dependencies
 pip install -e ../ # installs the fst package locally
 dbt build # Create the duckb database file and get commands working
+```
+
+```bash
+# open up your IDE or another terminal to start the fst workbench
 fst start
 ```
 
