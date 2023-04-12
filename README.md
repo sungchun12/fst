@@ -50,12 +50,12 @@ git clone https://github.com/sungchun12/fst.git
 cd fst
 git clone https://github.com/dbt-labs/jaffle_shop_duckdb.git
 cd jaffle_shop_duckdb
-python3 -m venv venv
+python -m venv venv
 source venv/bin/activate
-python3 -m pip install --upgrade pip setuptools wheel
+python -m pip install --upgrade pip setuptools wheel
 source venv/bin/activate
-pip3 install -r requirements.txt
-pip3 install -e ../ # installing the fst package locally
+pip install -r requirements.txt # installs the dbt dependencies
+pip install -e ../ # installs the fst package locally
 dbt build # Create the duckb database file and get commands working
 fst start
 ```
@@ -119,3 +119,5 @@ fst start
 +---------------+--------------+-------------+---------------+---------------------+--------------------+---------------------------+
 2023-04-12 11:30:28 - INFO - fst metrics saved to the database: fst_metrics.duckdb
 ```
+
+> Note: Tested with python version: 3.8.9 on MacOs Intel
