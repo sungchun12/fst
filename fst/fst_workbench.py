@@ -18,7 +18,6 @@ from typing import Any, List
 # from gql.transport.requests import RequestsHTTPTransport
 
 # TODO: get every component in the main function
-# TODO: make everything an expander
 # TODO: fix build vs. compile time for more accurate stats
 # TODO: what would be so killer about this is if it persists information and average performance of production models along with the dev models for slider options. You continue to progress and see what's been done before!
 # TODO: fix a bug where when dbt build fails with candidate bindings that it doesn't finish the rest of the metrics collection
