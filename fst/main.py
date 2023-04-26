@@ -21,10 +21,10 @@ def start_streamlit() -> None:
     streamlit_app_path = os.path.join(current_dir, "streamlit_copilot.py")
     subprocess.run(["streamlit", "run", streamlit_app_path])
 
-def start_directory_watcher(path: str, log_queue: multiprocessing.Queue) -> None:
+def start_directory_watcher(path: str, log_queue: multiprocessing.Queue, rows_preview_limit: int) -> None:
     project_dir = path
     models_dir = get_models_directory(project_dir)
-    event_handler = DynamicQueryHandler(handle_query, models_dir)
+    event_handler = DynamicQueryHandler(handle_query, models_dir, rows_preview_limit)
     watch_directory(event_handler, models_dir)
 
 def listener_process(queue: multiprocessing.Queue) -> None:
@@ -56,7 +56,7 @@ def listener_process(queue: multiprocessing.Queue) -> None:
 def start(path: str, preview_limit: int) -> None:
     log_queue = multiprocessing.Queue()
     dir_watcher_process = multiprocessing.Process(
-        target=start_directory_watcher, args=(path, log_queue)
+        target=start_directory_watcher, args=(path, log_queue, preview_limit)
     )
     streamlit_process = multiprocessing.Process(target=start_streamlit)
     listener = multiprocessing.Process(target=listener_process, args=(log_queue,))

@@ -17,19 +17,16 @@ from fst.file_utils import (
     generate_test_yaml,
 )
 from fst.db_utils import get_duckdb_file_path, execute_query
-from fst.config_defaults import CONFIG
-
 
 logger = logging.getLogger(__name__)
 
-# Access the updated value of PREVIEW_LIMIT_ROWS
-preview_limit_rows = CONFIG["PREVIEW_LIMIT_ROWS"]
 
 
 class DynamicQueryHandler(FileSystemEventHandler):
-    def __init__(self, callback: Callable, models_dir: str):
+    def __init__(self, callback: Callable, models_dir: str, rows_preview_limit: int):
         self.callback = callback
         self.models_dir = models_dir
+        self.rows_preview_limit = rows_preview_limit
         self.debounce_timer: Optional[Timer] = None
 
     def on_modified(self, event: FileSystemEvent) -> None:
@@ -54,7 +51,7 @@ class DynamicQueryHandler(FileSystemEventHandler):
         with open(file_path, "r") as file:
             query = file.read()
         if query is not None and query.strip():
-            handle_query(query, file_path)
+            handle_query(query, file_path, self.rows_preview_limit)
 
 
 class DateEncoder(json.JSONEncoder):
@@ -64,9 +61,7 @@ class DateEncoder(json.JSONEncoder):
         return super(DateEncoder, self).default(obj)
 
 
-def handle_query(query, file_path):
-     # Access the updated value of PREVIEW_LIMIT_ROWS
-    preview_limit_rows = CONFIG["PREVIEW_LIMIT_ROWS"]
+def handle_query(query, file_path, rows_preview_limit):
 
     if query.strip():
         try:
@@ -105,7 +100,7 @@ def handle_query(query, file_path):
                     with open(compiled_sql_file, "r") as file:
                         compiled_query = file.read()
                     duckdb_file_path = get_duckdb_file_path()
-                    _, column_names = execute_query(compiled_query, duckdb_file_path, preview_limit_rows)
+                    _, column_names = execute_query(compiled_query, duckdb_file_path, rows_preview_limit)
 
                     warning_message = "Warning: No tests were run with the `dbt build` command. Consider adding tests to your project."
 
@@ -147,7 +142,7 @@ def handle_query(query, file_path):
 
                     start_time = time.time()
                     preview_result, column_names = execute_query(
-                        compiled_query, duckdb_file_path, preview_limit_rows
+                        compiled_query, duckdb_file_path, rows_preview_limit
                     )
                     query_time = time.time() - start_time
 
