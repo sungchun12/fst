@@ -21,10 +21,12 @@ from fst.db_utils import get_duckdb_file_path, execute_query
 logger = logging.getLogger(__name__)
 
 
+
 class DynamicQueryHandler(FileSystemEventHandler):
-    def __init__(self, callback: Callable, models_dir: str):
+    def __init__(self, callback: Callable, models_dir: str, rows_preview_limit: int):
         self.callback = callback
         self.models_dir = models_dir
+        self.rows_preview_limit = rows_preview_limit
         self.debounce_timer: Optional[Timer] = None
 
     def on_modified(self, event: FileSystemEvent) -> None:
@@ -49,7 +51,7 @@ class DynamicQueryHandler(FileSystemEventHandler):
         with open(file_path, "r") as file:
             query = file.read()
         if query is not None and query.strip():
-            handle_query(query, file_path)
+            handle_query(query, file_path, self.rows_preview_limit)
 
 
 class DateEncoder(json.JSONEncoder):
@@ -59,7 +61,8 @@ class DateEncoder(json.JSONEncoder):
         return super(DateEncoder, self).default(obj)
 
 
-def handle_query(query, file_path):
+def handle_query(query, file_path, rows_preview_limit):
+
     if query.strip():
         try:
             start_time = time.time()
@@ -97,7 +100,7 @@ def handle_query(query, file_path):
                     with open(compiled_sql_file, "r") as file:
                         compiled_query = file.read()
                     duckdb_file_path = get_duckdb_file_path()
-                    _, column_names = execute_query(compiled_query, duckdb_file_path)
+                    _, column_names = execute_query(compiled_query, duckdb_file_path, rows_preview_limit)
 
                     warning_message = "Warning: No tests were run with the `dbt build` command. Consider adding tests to your project."
 
@@ -111,27 +114,23 @@ def handle_query(query, file_path):
                     )
 
                     # Verify if the newly generated test YAML file exists
-                if os.path.isfile(test_yaml_path):
-                    logger.warning(test_yaml_path_warning_message)
-                    logger.warning(
-                        "Running `dbt test` with the generated test YAML file..."
-                    )
-                    result_rerun = subprocess.run(
-                        ["dbt", "test", "--select", model_name, "--store-failures"],
-                        capture_output=True,
-                        text=True,
-                    )
-                    full_output = result_rerun.stdout + result_rerun.stderr
-                    if result_rerun.returncode == 0:
-                        logger.info(
-                            "`dbt test` with generated tests was successful."
+                    if os.path.isfile(test_yaml_path):
+                        logger.warning(test_yaml_path_warning_message)
+                        logger.warning(
+                            "Running `dbt test` with the generated test YAML file..."
                         )
-                        logger.info(full_output)
+                        result_rerun = subprocess.run(
+                            ["dbt", "test", "--select", model_name, "--store-failures"],
+                            capture_output=True,
+                            text=True,
+                        )
+                        if result_rerun.returncode == 0:
+                            logger.info(
+                                "`dbt test` with generated tests was successful."
+                            )
+                            logger.info(result_rerun.stdout)
                     else:
-                        logger.error("Error running `dbt test`:")
-                        logger.error(full_output)
-                else:
-                    logger.error("Couldn't find the generated test YAML file.")
+                        logger.error("Couldn't find the generated test YAML file.")
 
             compiled_sql_file = find_compiled_sql_file(file_path)
             if compiled_sql_file:
@@ -143,7 +142,7 @@ def handle_query(query, file_path):
 
                     start_time = time.time()
                     preview_result, column_names = execute_query(
-                        compiled_query, duckdb_file_path
+                        compiled_query, duckdb_file_path, rows_preview_limit
                     )
                     query_time = time.time() - start_time
 
@@ -170,43 +169,38 @@ def handle_query(query, file_path):
             # Use the custom DateEncoder to handle date objects
             result_preview_json = json.dumps(result_preview_dict, cls=DateEncoder)
             current_timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-            
-            try:
-                duckdb_conn = duckdb.connect("fst_metrics.duckdb")
-                duckdb_conn.execute(
-                    """
-                    INSERT INTO metrics (
-                        timestamp,
-                        modified_sql_file,
-                        compiled_sql_file,
-                        compiled_query,
-                        dbt_build_status,
-                        duckdb_file_name,
-                        dbt_build_time,
-                        query_time,
-                        result_preview_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                    (
-                        current_timestamp,
-                        active_file,
-                        compiled_sql_file,
-                        compiled_query,
-                        dbt_build_status,
-                        duckdb_file_path,
-                        compile_time,
-                        query_time,
-                        result_preview_json,
-                    ),
-                )
 
-                duckdb_conn.commit()
-            except Exception as e:
-                duckdb_conn.rollback()
-                logger.error(f"Error while inserting data into fst_metrics.duckdb: {e}")
-            finally:
-                duckdb_conn.close()
-                logger.info("fst metrics saved to the database: fst_metrics.duckdb")
+            duckdb_conn = duckdb.connect("fst_metrics.duckdb")
+            duckdb_conn.execute(
+                """
+                INSERT INTO metrics (
+                    timestamp,
+                    modified_sql_file,
+                    compiled_sql_file,
+                    compiled_query,
+                    dbt_build_status,
+                    duckdb_file_name,
+                    dbt_build_time,
+                    query_time,
+                    result_preview_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+                (
+                    current_timestamp,
+                    active_file,
+                    compiled_sql_file,
+                    compiled_query,
+                    dbt_build_status,
+                    duckdb_file_path,
+                    compile_time,
+                    query_time,
+                    result_preview_json,
+                ),
+            )
+
+            duckdb_conn.commit()
+            duckdb_conn.close()
+            logger.info("fst metrics saved to the database: fst_metrics.duckdb")
 
         except Exception as e:
             logger.error(f"Error: {e}")

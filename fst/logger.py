@@ -29,14 +29,16 @@ def setup_logger(queue: Optional[Queue] = None) -> logging.Logger:
     )
 
     logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
+    
+    if not logger.handlers:
+        logger.setLevel(logging.INFO)
 
-    if queue is not None:
-        handler = QueueHandler(queue)
-    else:
-        handler = logging.StreamHandler(sys.stdout)
+        if queue is not None:
+            handler = QueueHandler(queue)
+        else:
+            handler = logging.StreamHandler(sys.stdout)
 
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
     return logger
