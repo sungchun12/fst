@@ -14,6 +14,7 @@ def watch_directory(
 ) -> None:
     global observer
     logger.info(f"Started watching directory: {file_path}")
+    print(f"Started watching directory: {file_path}")
     observer = PollingObserver()
     observer.schedule(event_handler, path=file_path, recursive=True)
     observer.start()
